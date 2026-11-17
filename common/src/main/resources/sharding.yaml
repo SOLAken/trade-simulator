@@ -1,0 +1,57 @@
+# ShardingSphere-JDBC 分片配置（trade-service / account-service 共用）
+# 2 库 × 4 表；分片算法见 com.tradesim.common.shard.GeneShardingAlgorithm
+# $${ENV::default} 在 URL 带 ?placeholder-type=environment 时按环境变量替换
+mode:
+  type: Standalone
+  repository:
+    type: JDBC
+
+dataSources:
+  ds_0:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://$${MYSQL0_ADDR::127.0.0.1:3306}/tradesim_0?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&rewriteBatchedStatements=true
+    username: root
+    password: root
+    maximumPoolSize: 20
+  ds_1:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://$${MYSQL1_ADDR::127.0.0.1:3307}/tradesim_1?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&rewriteBatchedStatements=true
+    username: root
+    password: root
+    maximumPoolSize: 20
+
+rules:
+  - !SHARDING
+    tables:
+      t_order:
+        actualDataNodes: ds_$->{0..1}.t_order_$->{0..3}
+        databaseStrategy: { complex: { shardingColumns: "user_id,id", shardingAlgorithmName: gene_db } }
+        tableStrategy:    { complex: { shardingColumns: "user_id,id", shardingAlgorithmName: gene_tb } }
+      t_trade:
+        actualDataNodes: ds_$->{0..1}.t_trade_$->{0..3}
+        databaseStrategy: { complex: { shardingColumns: "user_id,id,order_id", shardingAlgorithmName: gene_db } }
+        tableStrategy:    { complex: { shardingColumns: "user_id,id,order_id", shardingAlgorithmName: gene_tb } }
+      t_account:
+        actualDataNodes: ds_$->{0..1}.t_account_$->{0..3}
+        databaseStrategy: { complex: { shardingColumns: user_id, shardingAlgorithmName: gene_db } }
+        tableStrategy:    { complex: { shardingColumns: user_id, shardingAlgorithmName: gene_tb } }
+      t_position:
+        actualDataNodes: ds_$->{0..1}.t_position_$->{0..3}
+        databaseStrategy: { complex: { shardingColumns: user_id, shardingAlgorithmName: gene_db } }
+        tableStrategy:    { complex: { shardingColumns: user_id, shardingAlgorithmName: gene_tb } }
+      t_fund_flow:
+        actualDataNodes: ds_$->{0..1}.t_fund_flow_$->{0..3}
+        databaseStrategy: { complex: { shardingColumns: user_id, shardingAlgorithmName: gene_db } }
+        tableStrategy:    { complex: { shardingColumns: user_id, shardingAlgorithmName: gene_tb } }
+    shardingAlgorithms:
+      gene_db:
+        type: CLASS_BASED
+        props: { strategy: COMPLEX, algorithmClassName: com.tradesim.common.shard.GeneShardingAlgorithm, target: db }
+      gene_tb:
+        type: CLASS_BASED
+        props: { strategy: COMPLEX, algorithmClassName: com.tradesim.common.shard.GeneShardingAlgorithm, target: table }
+
+props:
+  sql-show: false

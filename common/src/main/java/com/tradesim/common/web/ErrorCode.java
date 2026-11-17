@@ -9,6 +9,9 @@ public enum ErrorCode {
     INSUFFICIENT_POSITION(2002, "可卖持仓不足"),
     PRICE_OUT_OF_LIMIT(2003, "价格超出涨跌停范围"),
     MARKET_CLOSED(2004, "休市中"),
+    NO_ACCOUNT(2005, "尚未加入该比赛"),
+    NO_QUOTE(2006, "暂无行情"),
+    ORDER_NOT_FOUND(2007, "订单不存在"),
     RISK_BLOCKED(3001, "账户已被风控限制");
 
     private final int code;
