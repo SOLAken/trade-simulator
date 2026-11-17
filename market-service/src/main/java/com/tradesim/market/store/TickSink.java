@@ -46,8 +46,9 @@ public class TickSink {
     public void accept(List<MarketTick> ticks, Map<String, String> json) {
         for (MarketTick t : ticks) {
             kafka.send(Topics.MARKET_TICK, t.symbol(), json.get("mkt:last:" + t.symbol()));
-            long prev = lastVolume.getOrDefault(t.symbol(), 0L);
-            long qty = t.volume() >= prev ? t.volume() - prev : t.volume();   // 跨日累计量归零
+            Long prev = lastVolume.get(t.symbol());
+            // 重启后首个 tick 不知道上一笔累计量，记 0（否则会把当日全部累计量算进一根 K 线）；跨日累计量归零
+            long qty = prev == null ? 0 : t.volume() >= prev ? t.volume() - prev : t.volume();
             lastVolume.put(t.symbol(), t.volume());
             if (!dbQueue.offer(new Object[]{new Timestamp(t.ts()), t.symbol(), t.last(), qty, t.tradingDay()})) {
                 if (++dropped % 1000 == 1) log.warn("tick db queue full, dropped={}", dropped);

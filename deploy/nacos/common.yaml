@@ -6,6 +6,12 @@ spring:
       port: 6379
   kafka:
     bootstrap-servers: ${KAFKA_ADDR:127.0.0.1:9092}
+  cloud:
+    loadbalancer:
+      cache:
+        ttl: 5s       # 默认 35s：实例重启后网关/Feign 会持续打到已下线实例
+  lifecycle:
+    timeout-per-shutdown-phase: 10s
 rocketmq:
   name-server: ${RMQ_NAMESRV:127.0.0.1:9876}
 tradesim:

@@ -1,0 +1,18 @@
+[
+  {
+    "resource": "trade",
+    "resourceMode": 0,
+    "grade": 1,
+    "count": 500,
+    "intervalSec": 1,
+    "controlBehavior": 0
+  },
+  {
+    "resource": "trade",
+    "resourceMode": 0,
+    "grade": 1,
+    "count": 20,
+    "intervalSec": 1,
+    "paramItem": { "parseStrategy": 2, "fieldName": "Authorization" }
+  }
+]

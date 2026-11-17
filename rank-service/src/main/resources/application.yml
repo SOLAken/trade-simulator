@@ -24,3 +24,12 @@ management:
     web:
       exposure:
         include: health,info,prometheus,refresh
+---
+spring:
+  datasource:
+    url: jdbc:postgresql://${PG_HOST:127.0.0.1}:5432/market?reWriteBatchedInserts=true
+    username: postgres
+    password: postgres
+rank:
+  snapshot-millis: 2000
+  equity-every: 5        # 每 5 次快照（10s）落一次收益曲线

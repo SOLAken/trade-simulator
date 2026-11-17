@@ -9,7 +9,9 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import com.tradesim.common.contest.ContestKeys;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,8 +25,10 @@ public class UserController {
     private final JdbcClient jdbc;
     private final PasswordEncoder encoder;
     private final JwtCodec jwt;
+    private final StringRedisTemplate redis;
 
-    public UserController(JdbcClient jdbc, PasswordEncoder encoder, JwtCodec jwt) {
+    public UserController(JdbcClient jdbc, PasswordEncoder encoder, JwtCodec jwt, StringRedisTemplate redis) {
+        this.redis = redis;
         this.jdbc = jdbc;
         this.encoder = encoder;
         this.jwt = jwt;
@@ -51,6 +55,7 @@ public class UserController {
             throw new IllegalArgumentException("用户名已存在");
         }
         long id = kh.getKey().longValue();
+        redis.opsForHash().put(ContestKeys.NICKNAMES, Long.toString(id), nick);   // 排行榜展示用
         return Result.ok(new LoginResp(id, req.username(), nick, jwt.sign(id, req.username())));
     }
 
@@ -63,6 +68,7 @@ public class UserController {
                 .orElseThrow(() -> new BizException(ErrorCode.UNAUTHORIZED));
         if (!encoder.matches(req.password(), (String) row[1])) throw new BizException(ErrorCode.UNAUTHORIZED);
         long id = (Long) row[0];
+        redis.opsForHash().put(ContestKeys.NICKNAMES, Long.toString(id), (String) row[2]);
         return Result.ok(new LoginResp(id, req.username(), (String) row[2], jwt.sign(id, req.username())));
     }
 

@@ -6,6 +6,7 @@ const router = createRouter({
   routes: [
     { path: '/login', component: () => import('./views/Login.vue') },
     { path: '/', component: () => import('./views/Market.vue'), meta: { auth: true } },
+    { path: '/rank', component: () => import('./views/Rank.vue'), meta: { auth: true } },
   ],
 })
 

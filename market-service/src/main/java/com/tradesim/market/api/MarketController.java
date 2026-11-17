@@ -60,6 +60,16 @@ public class MarketController {
         return Result.ok(new ClockView(c.tradingDay(now), c.isOpen(now), c.closeAt(now), c.nextOpenAt(now), now));
     }
 
+    public record RulesView(java.math.BigDecimal feeRate, long minFeeCents, java.math.BigDecimal stampTaxRate,
+                            java.math.BigDecimal limitPct, int slippageBps, int dayMinutes) {}
+
+    /** 当前交易规则（来自 Nacos，热更新后此处立即可见）。 */
+    @GetMapping("/rules")
+    public Result<RulesView> rules() {
+        return Result.ok(new RulesView(rules.getFeeRate(), rules.getMinFeeCents(), rules.getStampTaxRate(),
+                rules.getLimitPct(), rules.getSlippageBps(), rules.getDayMinutes()));
+    }
+
     /** @param interval 5s|15s|1m|5m|15m|1d */
     @GetMapping("/kline")
     public Result<List<long[]>> kline(@RequestParam String symbol,

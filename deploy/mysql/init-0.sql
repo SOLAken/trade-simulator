@@ -1,3 +1,4 @@
+SET NAMES utf8mb4;
 CREATE DATABASE IF NOT EXISTS tradesim_0 DEFAULT CHARSET utf8mb4;
 USE tradesim_0;
 CREATE TABLE IF NOT EXISTS t_order_0 (
@@ -342,3 +343,7 @@ CREATE TABLE IF NOT EXISTS t_contest_member (
   PRIMARY KEY (contest_id, user_id),
   KEY idx_user (user_id)
 );
+
+-- 常驻公开赛（无结束时间）
+INSERT IGNORE INTO t_contest(id, name, init_cash, start_at, end_at, status)
+VALUES (1, '常驻公开赛', 100000000, '2026-01-01 00:00:00', '2099-12-31 00:00:00', 1);

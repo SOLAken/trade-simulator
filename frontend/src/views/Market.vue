@@ -2,6 +2,7 @@
   <div class="layout">
     <header class="panel top">
       <strong class="logo">模拟交易大赛</strong>
+      <ContestBar />
       <span v-if="market.clock" class="clock">
         第 {{ market.clock.tradingDay }} 交易日 ·
         <b :class="market.clock.open ? 'up' : 'muted'">{{ market.clock.open ? '交易中' : '休市' }}</b>
@@ -9,6 +10,7 @@
       </span>
       <span class="dot" :class="{ on: market.connected }" :title="market.connected ? '行情已连接' : '重连中'" />
       <span class="spacer" />
+      <router-link to="/rank" class="nav">排行榜</router-link>
       <span class="muted">{{ auth.nickname }}</span>
       <button @click="logout">退出</button>
     </header>
@@ -39,6 +41,15 @@
       </div>
       <div class="chart-wrap"><KlineChart v-if="symbol" :symbol="symbol" :interval="interval" /></div>
     </main>
+
+    <aside class="panel right">
+      <AccountSummary />
+      <OrderPanel v-if="symbol" :symbol="symbol" />
+      <div v-if="game.contest && !game.joined" class="join-tip muted">报名参赛后即可下单</div>
+      <RankMini />
+    </aside>
+
+    <section class="panel bottom"><BottomTabs @pick="symbol = $event" /></section>
   </div>
 </template>
 
@@ -47,11 +58,18 @@ import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import QuoteList from '../components/QuoteList.vue'
 import KlineChart from '../components/KlineChart.vue'
+import ContestBar from '../components/ContestBar.vue'
+import OrderPanel from '../components/OrderPanel.vue'
+import AccountSummary from '../components/AccountSummary.vue'
+import BottomTabs from '../components/BottomTabs.vue'
+import RankMini from '../components/RankMini.vue'
+import { useGame } from '../stores/game.js'
 import { useMarket } from '../stores/market.js'
 import { useAuth } from '../stores/auth.js'
 import { yuan, pct, trend, volume } from '../utils/format.js'
 
 const market = useMarket()
+const game = useGame()
 const auth = useAuth()
 const router = useRouter()
 const symbol = ref('')
@@ -77,6 +95,7 @@ const countdown = computed(() => {
 
 onMounted(async () => {
   if (!market.symbols.length) await market.init()
+  if (!game.contests.length) await game.init()
   symbol.value ||= market.symbols[0]?.symbol
 })
 
@@ -89,8 +108,8 @@ function logout() {
 <style scoped>
 .layout {
   display: grid; gap: 8px; padding: 8px; height: 100vh;
-  grid-template-columns: 280px 1fr; grid-template-rows: auto 1fr;
-  grid-template-areas: "top top" "side main";
+  grid-template-columns: 240px minmax(0, 1fr) 320px; grid-template-rows: auto minmax(0, 1fr) 260px;
+  grid-template-areas: "top top top" "side main right" "side bottom right";
 }
 .top { grid-area: top; display: flex; align-items: center; gap: 14px; padding: 10px 16px; }
 .logo { color: var(--accent); }
@@ -98,6 +117,12 @@ function logout() {
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--up); }
 .dot.on { background: var(--down); }
 .side { grid-area: side; overflow: auto; }
+.right { grid-area: right; overflow: auto; display: flex; flex-direction: column; }
+.right > :deep(*) + :deep(*) { border-top: 1px solid var(--border); }
+.bottom { grid-area: bottom; min-height: 0; overflow: hidden; }
+.nav { color: var(--text); text-decoration: none; }
+.nav:hover { color: var(--accent); }
+.join-tip { padding: 10px 14px; font-size: 12px; }
 .main { grid-area: main; display: flex; flex-direction: column; padding: 12px 16px; min-width: 0; }
 .quote { display: flex; gap: 32px; align-items: center; flex-wrap: wrap; }
 .title { font-size: 16px; font-weight: 600; }
@@ -111,8 +136,15 @@ dd { margin: 2px 0 0; }
 .intervals .on { border-color: var(--accent); color: var(--accent); }
 .chart-wrap { flex: 1; min-height: 0; }
 
+@media (max-width: 1100px) {
+  .layout { grid-template-columns: 220px minmax(0, 1fr); grid-template-rows: auto 460px auto 300px;
+    grid-template-areas: "top top" "side main" "right right" "bottom bottom"; height: auto; }
+}
 @media (max-width: 760px) {
-  .layout { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; grid-template-areas: "top" "main" "side"; height: auto; }
-  .chart-wrap { height: 380px; flex: none; }
+  .layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto;
+    grid-template-areas: "top" "main" "right" "side" "bottom"; height: auto; }
+  .top { flex-wrap: wrap; }
+  .chart-wrap { height: 360px; flex: none; }
+  .bottom { height: 320px; }
 }
 </style>

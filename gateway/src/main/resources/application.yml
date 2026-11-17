@@ -58,3 +58,25 @@ spring:
             allowed-origin-patterns: "*"
             allowed-methods: "*"
             allowed-headers: "*"
+---
+spring:
+  cloud:
+    sentinel:
+      eager: true
+      transport:
+        dashboard: ${SENTINEL_DASHBOARD:127.0.0.1:8858}
+      scg:
+        fallback:
+          mode: response
+          response-status: 429
+          content-type: application/json
+          response-body: '{"code":429,"msg":"请求过于频繁，请稍后再试","data":null}'
+      # 规则持久化在 Nacos（group=SENTINEL_GROUP），控制台或 Nacos 修改后实时推送
+      datasource:
+        gw-flow:
+          nacos:
+            server-addr: ${NACOS_ADDR:127.0.0.1:8848}
+            data-id: gateway-flow-rules.json
+            group-id: SENTINEL_GROUP
+            data-type: json
+            rule-type: gw-flow

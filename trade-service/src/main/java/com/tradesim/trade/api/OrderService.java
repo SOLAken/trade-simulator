@@ -1,5 +1,8 @@
 package com.tradesim.trade.api;
 
+import com.alibaba.csp.sentinel.annotation.SentinelResource;
+import com.alibaba.csp.sentinel.slots.block.BlockException;
+import com.tradesim.common.contest.ContestKeys;
 import com.tradesim.common.id.GeneSnowflake;
 import com.tradesim.common.market.MarketTick;
 import com.tradesim.common.order.OrderStatus;
@@ -52,7 +55,10 @@ public class OrderService {
      * 下单。幂等两道闸：
      * 1) Redis SETNX —— 挡住并发重复提交（双击、网关重试），后到者等前者结果；
      * 2) 唯一键 (user_id, client_key) —— 最终防线，Redis 失效也不会重复下单。
+     * <p>
+     * Sentinel 热点参数限流：按 userId（参数 0）单用户每秒 5 单，规则在 Nacos，防脚本刷单。
      */
+    @SentinelResource(value = "placeOrder", blockHandler = "placeBlocked")
     public OrderPO place(long userId, String clientKey, PlaceReq req) {
         String idemKey = "idem:{" + userId + "}:" + clientKey;
         if (!Boolean.TRUE.equals(redis.opsForValue().setIfAbsent(idemKey, "1", Duration.ofHours(24)))) {
@@ -78,6 +84,10 @@ public class OrderService {
         }
     }
 
+    public OrderPO placeBlocked(long userId, String clientKey, PlaceReq req, BlockException e) {
+        throw new BizException(ErrorCode.TOO_MANY_REQUESTS);
+    }
+
     public boolean cancel(long userId, long orderId) {
         OrderPO o = orders.selectById(orderId);
         if (o == null || o.userId != userId) throw new BizException(ErrorCode.ORDER_NOT_FOUND);
@@ -88,6 +98,7 @@ public class OrderService {
     private OrderPO build(long userId, String clientKey, PlaceReq req) {
         long now = System.currentTimeMillis();
         if (!rules.clock().isOpen(now)) throw new BizException(ErrorCode.MARKET_CLOSED);
+        checkContestWindow(req.contestId(), now);
         Side side = Side.of(req.side());
         OrderType type = OrderType.of(req.type());
         if (req.qty() <= 0 || (side == Side.BUY && req.qty() % 100 != 0)) {
@@ -122,5 +133,13 @@ public class OrderService {
                 ? FillCalc.buyFreeze(type == OrderType.LIMIT ? req.price() : q.limitUp(), req.qty(), rules)
                 : req.qty();
         return o;
+    }
+
+    private void checkContestWindow(long contestId, long now) {
+        var meta = redis.opsForHash().multiGet(ContestKeys.meta(contestId), java.util.List.of("startAt", "endAt"));
+        if (meta.get(0) == null) throw new BizException(ErrorCode.CONTEST_NOT_FOUND);
+        if (now < Long.parseLong((String) meta.get(0)) || now >= Long.parseLong((String) meta.get(1))) {
+            throw new BizException(ErrorCode.CONTEST_CLOSED);
+        }
     }
 }

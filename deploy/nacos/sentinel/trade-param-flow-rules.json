@@ -1,0 +1,10 @@
+[
+  {
+    "resource": "placeOrder",
+    "paramIdx": 0,
+    "grade": 1,
+    "count": 5,
+    "durationInSec": 1,
+    "controlBehavior": 0
+  }
+]

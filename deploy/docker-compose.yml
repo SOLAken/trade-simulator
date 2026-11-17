@@ -11,8 +11,8 @@ services:
   mysql-0:
     profiles: [infra]
     image: mysql:8.0.39
-    environment: { MYSQL_ROOT_PASSWORD: root, TZ: Asia/Shanghai }
-    command: [--character-set-server=utf8mb4, --collation-server=utf8mb4_0900_ai_ci, --innodb-buffer-pool-size=256M]
+    environment: { MYSQL_ROOT_PASSWORD: root }
+    command: [--character-set-server=utf8mb4, --collation-server=utf8mb4_0900_ai_ci, --innodb-buffer-pool-size=256M, --default-time-zone=+00:00]   # 统一存 UTC，前端按本地时区展示
     ports: ["3306:3306"]
     volumes:
       - ./mysql/init-0.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -23,8 +23,8 @@ services:
   mysql-1:
     profiles: [infra]
     image: mysql:8.0.39
-    environment: { MYSQL_ROOT_PASSWORD: root, TZ: Asia/Shanghai }
-    command: [--character-set-server=utf8mb4, --collation-server=utf8mb4_0900_ai_ci, --innodb-buffer-pool-size=256M]
+    environment: { MYSQL_ROOT_PASSWORD: root }
+    command: [--character-set-server=utf8mb4, --collation-server=utf8mb4_0900_ai_ci, --innodb-buffer-pool-size=256M, --default-time-zone=+00:00]   # 统一存 UTC，前端按本地时区展示
     ports: ["3307:3306"]
     volumes:
       - ./mysql/init-1.sql:/docker-entrypoint-initdb.d/init.sql:ro

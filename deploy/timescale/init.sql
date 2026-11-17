@@ -32,3 +32,13 @@ WITH NO DATA;
 SELECT add_continuous_aggregate_policy('kline_1m',
   start_offset => INTERVAL '1 hour', end_offset => INTERVAL '1 minute',
   schedule_interval => INTERVAL '30 seconds', if_not_exists => TRUE);
+
+-- 收益曲线：rank-service 每 10 秒为每个参赛者记录总资产
+CREATE TABLE IF NOT EXISTS equity (
+  ts          TIMESTAMPTZ NOT NULL,
+  contest_id  BIGINT      NOT NULL,
+  user_id     BIGINT      NOT NULL,
+  total       BIGINT      NOT NULL
+);
+SELECT create_hypertable('equity', by_range('ts', INTERVAL '1 day'), if_not_exists => TRUE);
+CREATE INDEX IF NOT EXISTS idx_equity_user ON equity (contest_id, user_id, ts DESC);

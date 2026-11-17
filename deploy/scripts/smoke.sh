@@ -16,7 +16,7 @@ TOKEN=$(curl -s -X POST "$GW/api/user/register" -H 'Content-Type: application/js
   -d "{\"username\":\"$USER\",\"password\":\"secret123\"}" | jq -r .data.token)
 [ "$TOKEN" != null ] && pass "注册登录" || fail "注册失败"
 
-[ "$(post "/api/account/open?contestId=$CID" | jq -r .code)" = 0 ] && pass "开户（初始资金 100 万）" || fail "开户失败"
+[ "$(post "/api/user/contests/$CID/join" | jq -r .code)" = 0 ] && pass "报名比赛（Feign 开户，初始资金 100 万）" || fail "报名失败"
 
 # 休市窗口里等开盘；离收盘不足 20 秒时也等下一个交易日，避免测试中途休市
 for _ in $(seq 1 120); do

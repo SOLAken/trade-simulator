@@ -20,7 +20,11 @@ port() {   # macOS 自带 bash 3.2 不支持关联数组
 
 stop() {
   for m in "$@"; do pkill -f "$m-0.1.0-SNAPSHOT.jar" 2>/dev/null || true; done
-  sleep 1
+  # 必须等旧进程真正退出：优雅停机可能要十几秒，新进程提前启动会因端口占用直接退出
+  for m in "$@"; do
+    for _ in $(seq 1 30); do pgrep -f "$m-0.1.0-SNAPSHOT.jar" >/dev/null || break; sleep 1; done
+    pkill -9 -f "$m-0.1.0-SNAPSHOT.jar" 2>/dev/null || true
+  done
 }
 
 if [ "${1:-}" = stop ]; then stop "${ALL[@]}"; echo stopped; exit 0; fi

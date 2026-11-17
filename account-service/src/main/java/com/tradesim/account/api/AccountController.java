@@ -10,9 +10,7 @@ import com.tradesim.common.web.BizException;
 import com.tradesim.common.web.ErrorCode;
 import com.tradesim.common.web.Headers;
 import com.tradesim.common.web.Result;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -25,26 +23,14 @@ public class AccountController {
     private final StringRedisTemplate redis;
     private final ObjectMapper om;
     private final TradeRules rules;
-    private final long initCash;
 
     public AccountController(LedgerMapper ledger, FundStore fund, StringRedisTemplate redis, ObjectMapper om,
-                             TradeRules rules, @Value("${account.init-cash-cents:100000000}") long initCash) {
+                             TradeRules rules) {
         this.ledger = ledger;
         this.fund = fund;
         this.redis = redis;
         this.om = om;
         this.rules = rules;
-        this.initCash = initCash;
-    }
-
-    /** 加入比赛 = 开户：MySQL 账本落库后再初始化 Redis 热数据（两者都幂等）。 */
-    @PostMapping("/open")
-    @Transactional
-    public Result<Boolean> open(@RequestHeader(Headers.USER_ID) long uid, @RequestParam long contestId) {
-        boolean created = ledger.insertAccount(uid, contestId, initCash) == 1;
-        if (created) ledger.insertFlow(uid, contestId, contestId, "INIT", null, initCash, 0, 0);
-        fund.openAccount(uid, contestId, initCash);
-        return Result.ok(created);
     }
 
     public record PositionView(String symbol, long qty, long avail, long frozen, long pending,

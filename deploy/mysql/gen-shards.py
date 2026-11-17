@@ -84,6 +84,7 @@ TABLES = {
 }
 
 db = int(sys.argv[1])
+print("SET NAMES utf8mb4;")
 print(f"CREATE DATABASE IF NOT EXISTS tradesim_{db} DEFAULT CHARSET utf8mb4;\nUSE tradesim_{db};")
 for name, body in TABLES.items():
     for i in range(4):

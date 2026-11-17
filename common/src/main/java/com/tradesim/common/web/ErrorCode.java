@@ -12,6 +12,8 @@ public enum ErrorCode {
     NO_ACCOUNT(2005, "尚未加入该比赛"),
     NO_QUOTE(2006, "暂无行情"),
     ORDER_NOT_FOUND(2007, "订单不存在"),
+    CONTEST_CLOSED(2008, "比赛未开始或已结束"),
+    CONTEST_NOT_FOUND(2009, "比赛不存在"),
     RISK_BLOCKED(3001, "账户已被风控限制");
 
     private final int code;
