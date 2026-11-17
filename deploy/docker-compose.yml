@@ -121,7 +121,56 @@ services:
     depends_on: [rmq-namesrv]
     <<: *small
 
+  # ---------------- flink ----------------
+  # 作业提交：./deploy/scripts/flink-submit.sh   Web UI: http://localhost:8081 被 user-service 占用，故映射到 8090
+  # 命名卷默认属主 root，Flink 进程以 uid 9999 运行，写 checkpoint 会失败：启动前一次性修正属主
+  flink-init:
+    profiles: [flink]
+    image: busybox:1.36
+    command: ["sh", "-c", "mkdir -p /flink-data/checkpoints /flink-data/savepoints && chown -R 9999:9999 /flink-data"]
+    volumes:
+      - flinkdata:/flink-data
+
+  flink-jobmanager:
+    profiles: [flink]
+    depends_on:
+      flink-init: { condition: service_completed_successfully }
+    image: flink:1.20.0-scala_2.12-java17
+    command: jobmanager
+    ports: ["8090:8081"]
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        jobmanager.memory.process.size: 1024m
+        state.backend.type: rocksdb
+        state.checkpoints.dir: file:///flink-data/checkpoints
+        state.savepoints.dir: file:///flink-data/savepoints
+        execution.checkpointing.interval: 10s
+    volumes:
+      - flinkdata:/flink-data
+      - ../flink-jobs/target:/jobs:ro
+    deploy: { resources: { limits: { memory: 1200m } } }
+
+  flink-taskmanager:
+    profiles: [flink]
+    image: flink:1.20.0-scala_2.12-java17
+    command: taskmanager
+    depends_on:
+      flink-init: { condition: service_completed_successfully }
+      flink-jobmanager: { condition: service_started }
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.numberOfTaskSlots: 4
+        taskmanager.memory.process.size: 1536m
+        state.backend.type: rocksdb
+        state.checkpoints.dir: file:///flink-data/checkpoints
+    volumes:
+      - flinkdata:/flink-data
+    deploy: { resources: { limits: { memory: 1700m } } }
+
 volumes:
   mysql0: {}
   mysql1: {}
   tsdb: {}
+  flinkdata: {}

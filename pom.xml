@@ -22,6 +22,7 @@
     <module>account-service</module>
     <module>risk-service</module>
     <module>rank-service</module>
+    <module>flink-jobs</module>
   </modules>
 
   <properties>

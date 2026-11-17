@@ -18,6 +18,6 @@ export async function api(path, { method = 'GET', body, headers = {} } = {}) {
     auth.logout()
     router.push('/login')
   }
-  if (json.code !== 0) throw new Error(json.msg || `请求失败 ${res.status}`)
+  if (json.code !== 0) throw Object.assign(new Error(json.msg || `请求失败 ${res.status}`), { code: json.code })
   return json.data
 }

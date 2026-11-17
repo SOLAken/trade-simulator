@@ -31,5 +31,5 @@ spring:
     username: postgres
     password: postgres
 rank:
-  snapshot-millis: 2000
-  equity-every: 5        # 每 5 次快照（10s）落一次收益曲线
+  snapshot-millis: 30000   # 全量校准周期；实时更新来自 Flink rank.update
+  equity-every: 1          # 每次校准都落收益曲线（30s 粒度）

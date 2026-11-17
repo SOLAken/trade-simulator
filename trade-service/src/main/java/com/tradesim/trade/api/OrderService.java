@@ -3,6 +3,7 @@ package com.tradesim.trade.api;
 import com.alibaba.csp.sentinel.annotation.SentinelResource;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
 import com.tradesim.common.contest.ContestKeys;
+import com.tradesim.common.contest.RiskKeys;
 import com.tradesim.common.id.GeneSnowflake;
 import com.tradesim.common.market.MarketTick;
 import com.tradesim.common.order.OrderStatus;
@@ -60,6 +61,7 @@ public class OrderService {
      */
     @SentinelResource(value = "placeOrder", blockHandler = "placeBlocked")
     public OrderPO place(long userId, String clientKey, PlaceReq req) {
+        if (Boolean.TRUE.equals(redis.hasKey(RiskKeys.block(userId)))) throw new BizException(ErrorCode.RISK_BLOCKED);
         String idemKey = "idem:{" + userId + "}:" + clientKey;
         if (!Boolean.TRUE.equals(redis.opsForValue().setIfAbsent(idemKey, "1", Duration.ofHours(24)))) {
             OrderPO existing = orders.findByClientKey(userId, clientKey);

@@ -16,10 +16,11 @@ import java.time.Duration;
 import java.util.*;
 
 /**
- * 排行榜全量快照：每 2 秒按最新价重算所有参赛者总资产 → ZSet(score=总资产)。
+ * 排行榜全量快照：每 30 秒按最新价重算所有参赛者总资产 → ZSet(score=总资产)。
  * <p>
- * 定位是「校准」：P5 起 Flink 按成交事件做实时增量（rank.update），这里周期性用 Redis 真实持仓纠偏，
- * 两者互补——增量保证实时性，全量保证最终正确（Flink 状态丢失/事件丢失也能自愈）。
+ * 定位是「校准」：Flink 按成交事件做实时增量（rank.update → RankUpdateConsumer），这里每 30 秒用 Redis
+ * 真实资金/持仓全量纠偏。增量保证实时性，全量保证最终正确（Flink 状态丢失、事件丢失也能自愈）。
+ * 收益曲线也由这里按固定频率落 TimescaleDB，与实时流解耦。
  * 多实例部署时用 Redis 锁保证同一时刻只有一个实例在算。
  */
 @Component
@@ -46,7 +47,7 @@ public class RankSnapshotJob {
 
     @Scheduled(fixedDelayString = "${rank.snapshot-millis:2000}")
     public void snapshot() {
-        if (!Boolean.TRUE.equals(redis.opsForValue().setIfAbsent(LOCK, owner, Duration.ofMillis(1800)))) return;
+        if (!Boolean.TRUE.equals(redis.opsForValue().setIfAbsent(LOCK, owner, Duration.ofSeconds(25)))) return;
         boolean writeEquity = ++runs % equityEvery == 0;
         long now = System.currentTimeMillis();
         Map<String, Long> prices = calc.prices();
@@ -65,7 +66,7 @@ public class RankSnapshotJob {
             Set<ZSetOperations.TypedTuple<String>> tuples = new HashSet<>();
             totals.forEach((u, t) -> tuples.add(new DefaultTypedTuple<>(u.toString(), (double) t)));
             redis.opsForZSet().add(ContestKeys.rank(contestId), tuples);
-            ws.publish(contestId);
+            ws.markDirty(contestId);
             if (writeEquity) {
                 Timestamp ts = new Timestamp(now);
                 totals.forEach((u, t) -> equityRows.add(new Object[]{ts, contestId, u, t}));

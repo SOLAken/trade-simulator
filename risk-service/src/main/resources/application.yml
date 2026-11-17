@@ -17,6 +17,7 @@ spring:
   config:
     import:
       - optional:nacos:common.yaml
+      - optional:nacos:risk-rules.yaml?refreshEnabled=true
       - optional:nacos:${spring.application.name}.yaml?refreshEnabled=true
 management:
   endpoints:

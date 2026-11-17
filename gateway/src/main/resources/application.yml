@@ -46,6 +46,9 @@ spring:
         - id: account
           uri: lb://account-service
           predicates: [Path=/api/account/**]
+        - id: risk
+          uri: lb://risk-service
+          predicates: [Path=/api/risk/**]
         - id: rank
           uri: lb://rank-service
           predicates: [Path=/api/rank/**]

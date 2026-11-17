@@ -43,6 +43,7 @@ import { useGame } from '../stores/game.js'
 import { useMarket } from '../stores/market.js'
 import { useToast } from '../stores/toast.js'
 import { yuan } from '../utils/format.js'
+import { api } from '../api.js'
 
 const props = defineProps({ symbol: String })
 const game = useGame()
@@ -90,7 +91,13 @@ async function submit() {
     const filled = o.filledQty ? `，成交 ${o.filledQty} 股` : ''
     toast.ok(`委托${STATUS[o.status]}${filled}`)
   } catch (e) {
-    toast.err(e.message)
+    if (e.code === 3001) {
+      // 被风控封禁：展示原因与剩余时长
+      const s = await api('/api/risk/me').catch(() => null)
+      toast.err(s?.blocked ? `${s.reason}，${Math.ceil(s.secondsLeft / 60)} 分钟后解除` : e.message)
+    } else {
+      toast.err(e.message)
+    }
   } finally {
     busy.value = false
   }

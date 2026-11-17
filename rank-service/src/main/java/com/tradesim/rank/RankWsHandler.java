@@ -2,6 +2,7 @@ package com.tradesim.rank;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -35,6 +36,21 @@ public class RankWsHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         subs.remove(session.getId());
+    }
+
+    private final java.util.Set<Long> dirty = ConcurrentHashMap.newKeySet();
+
+    /** 标记榜单有变化；实际推送由 flush() 每秒合并一次，避免实时更新流把客户端刷爆。 */
+    public void markDirty(long contestId) {
+        dirty.add(contestId);
+    }
+
+    @Scheduled(fixedDelay = 1000)
+    public void flush() {
+        for (Long cid : java.util.List.copyOf(dirty)) {
+            dirty.remove(cid);
+            publish(cid);
+        }
     }
 
     public void publish(long contestId) {

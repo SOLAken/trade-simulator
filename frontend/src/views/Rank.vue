@@ -3,7 +3,7 @@
     <header class="panel top">
       <router-link to="/" class="back">← 返回交易</router-link>
       <strong>{{ game.contest?.name }} · 排行榜</strong>
-      <span class="muted">{{ board?.participants ?? 0 }} 人参赛 · 每 2 秒刷新</span>
+      <span class="muted">{{ board?.participants ?? 0 }} 人参赛 · 实时刷新</span>
     </header>
     <section class="panel me" v-if="board?.me">
       <div>我的排名 <b class="accent">第 {{ board.me.rank }} 名</b></div>
@@ -13,7 +13,7 @@
     <section class="panel curve">
       <div class="title">我的收益曲线</div>
       <div ref="chartEl" class="chart" />
-      <p v-if="!curve.length" class="muted empty">暂无数据（每 10 秒记录一次，交易一会儿再来看）</p>
+      <p v-if="!curve.length" class="muted empty">暂无数据（每 30 秒记录一次，交易一会儿再来看）</p>
     </section>
     <section class="panel list">
       <table>

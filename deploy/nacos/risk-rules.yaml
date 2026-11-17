@@ -1,4 +1,9 @@
+# 风控阈值（dataId: risk-rules.yaml）——risk-service 监听变更并广播到 Kafka risk.rules，Flink 作业实时生效
 risk:
-  max-orders-per-10s: 20
-  max-cancel-ratio: 0.8
-  abnormal-return-zscore: 4.0
+  max-orders-per-10s: 20          # 高频下单：10 秒内下单数
+  quick-cancel-millis: 3000       # 挂单后多久内撤单算「快撤」
+  max-quick-cancels-per-30s: 8    # 挂撤刷单：30 秒内快撤次数
+  abnormal-return-zscore: 4.0     # 异常收益：偏离其他参赛者均值的标准差倍数
+  min-peers-for-zscore: 5         # 至少多少名其他参赛者才计算 z-score
+  min-std-cents: 1000000          # 标准差下限（分），防止开赛初期误报
+  block-minutes: 10               # 刷单类告警的封禁时长

@@ -9,6 +9,7 @@ public final class Topics {
     public static final String TRADE_EVENT = "trade.event";
     public static final String RISK_ALERT = "risk.alert";
     public static final String RANK_UPDATE = "rank.update";
+    public static final String RISK_RULES = "risk.rules";       // 风控阈值广播（compact topic）
     // RocketMQ
     public static final String RMQ_ORDER_FREEZE = "ORDER_FREEZE";
     public static final String RMQ_TRADE_SETTLE = "TRADE_SETTLE";
