@@ -1,0 +1,17 @@
+# 服务公共环境变量：中间件地址指向 infra-*.yaml 里的同名 Service（实际在 docker compose 中）
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-env
+  namespace: tradesim
+data:
+  NACOS_ADDR: nacos:8848
+  REDIS_HOST: redis
+  KAFKA_ADDR: kafka:29092
+  RMQ_NAMESRV: rmq-namesrv:9876
+  MYSQL_HOST: mysql-0
+  MYSQL0_ADDR: mysql-0:3306
+  MYSQL1_ADDR: mysql-1:3306
+  PG_HOST: timescale
+  SENTINEL_DASHBOARD: sentinel-dashboard:8858
+  JAVA_OPTS: "-XX:MaxRAMPercentage=70 -XX:+UseZGC -XX:+ZGenerational -XX:+ExitOnOutOfMemoryError"

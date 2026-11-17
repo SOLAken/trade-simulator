@@ -39,7 +39,9 @@ else
 fi
 
 for m in "${SERVICES[@]}"; do
-  nohup "$JAVA_HOME/bin/java" -Xms256m -Xmx384m -XX:+UseZGC -XX:+ZGenerational \
+  # JAVA_GC 可切换收集器做对比，如 JAVA_GC="-XX:+UseG1GC"；GC 日志写到 .run/logs/<服务>-gc.log
+  nohup "$JAVA_HOME/bin/java" -Xms256m -Xmx${HEAP:-384m} ${JAVA_GC:--XX:+UseZGC -XX:+ZGenerational} \
+    -Xlog:gc,safepoint:file="$LOGS/$m-gc.log":uptime,level \
     -jar "$m/target/$m-0.1.0-SNAPSHOT.jar" > "$LOGS/$m.log" 2>&1 &
 done
 

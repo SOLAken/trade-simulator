@@ -1,6 +1,8 @@
 # ShardingSphere-JDBC 分片配置（trade-service / account-service 共用）
 # 2 库 × 4 表；分片算法见 com.tradesim.common.shard.GeneShardingAlgorithm
 # $${ENV::default} 在 URL 带 ?placeholder-type=environment 时按环境变量替换
+# JDBC 参数（压测调优）：服务端预编译 + 连接级缓存，同一 SQL 每个连接只 prepare 一次；
+# useLocalSessionState 让 setAutoCommit 等在状态未变时不再发往服务端，每个事务省掉多次往返
 mode:
   type: Standalone
   repository:
@@ -10,14 +12,14 @@ dataSources:
   ds_0:
     dataSourceClassName: com.zaxxer.hikari.HikariDataSource
     driverClassName: com.mysql.cj.jdbc.Driver
-    jdbcUrl: jdbc:mysql://$${MYSQL0_ADDR::127.0.0.1:3306}/tradesim_0?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&rewriteBatchedStatements=true
+    jdbcUrl: jdbc:mysql://$${MYSQL0_ADDR::127.0.0.1:3306}/tradesim_0?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&rewriteBatchedStatements=true&useServerPrepStmts=true&cachePrepStmts=true&prepStmtCacheSize=256&prepStmtCacheSqlLimit=2048&useLocalSessionState=true
     username: root
     password: root
     maximumPoolSize: 20
   ds_1:
     dataSourceClassName: com.zaxxer.hikari.HikariDataSource
     driverClassName: com.mysql.cj.jdbc.Driver
-    jdbcUrl: jdbc:mysql://$${MYSQL1_ADDR::127.0.0.1:3307}/tradesim_1?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&rewriteBatchedStatements=true
+    jdbcUrl: jdbc:mysql://$${MYSQL1_ADDR::127.0.0.1:3307}/tradesim_1?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&rewriteBatchedStatements=true&useServerPrepStmts=true&cachePrepStmts=true&prepStmtCacheSize=256&prepStmtCacheSqlLimit=2048&useLocalSessionState=true
     username: root
     password: root
     maximumPoolSize: 20

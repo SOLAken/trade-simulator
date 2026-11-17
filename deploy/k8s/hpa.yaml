@@ -1,0 +1,24 @@
+# 比赛期间按 CPU 自动扩容（需 metrics-server）。扩容快、缩容慢：开盘洪峰来得急，回落后保留 5 分钟再缩
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: gateway, namespace: tradesim }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: gateway }
+  minReplicas: 2
+  maxReplicas: 6
+  metrics: [{ type: Resource, resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } } }]
+  behavior:
+    scaleUp: { stabilizationWindowSeconds: 0, policies: [{ type: Percent, value: 100, periodSeconds: 15 }] }
+    scaleDown: { stabilizationWindowSeconds: 300 }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: trade-service, namespace: tradesim }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: StatefulSet, name: trade-service }
+  minReplicas: 2
+  maxReplicas: 4
+  metrics: [{ type: Resource, resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } } }]
+  behavior:
+    scaleUp: { stabilizationWindowSeconds: 0, policies: [{ type: Pods, value: 2, periodSeconds: 30 }] }
+    scaleDown: { stabilizationWindowSeconds: 300 }

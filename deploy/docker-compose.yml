@@ -104,7 +104,8 @@ services:
   rmq-broker:
     profiles: [mq]
     image: apache/rocketmq:5.3.1
-    command: sh mqbroker -n rmq-namesrv:9876 -c /home/rocketmq/broker.conf
+    # broker 对外宣告的地址：宿主机跑服务时用 127.0.0.1（默认）；服务在容器/K8s 中时 BROKER_IP=rmq-broker
+    command: ["sh", "-c", "sed 's/^brokerIP1=.*/brokerIP1=${BROKER_IP:-127.0.0.1}/' /home/rocketmq/broker.conf > /tmp/broker.conf && exec sh mqbroker -n rmq-namesrv:9876 -c /tmp/broker.conf"]
     environment: { JAVA_OPT_EXT: "-Xms256m -Xmx512m -Xmn128m" }
     ports: ["10909:10909", "10911:10911", "10912:10912"]
     volumes:

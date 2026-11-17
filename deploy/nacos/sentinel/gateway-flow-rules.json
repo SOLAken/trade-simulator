@@ -3,7 +3,7 @@
     "resource": "trade",
     "resourceMode": 0,
     "grade": 1,
-    "count": 500,
+    "count": 200,
     "intervalSec": 1,
     "controlBehavior": 0
   },

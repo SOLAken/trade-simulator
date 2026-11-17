@@ -23,6 +23,8 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import com.tradesim.trade.config.TradeConfig.NodeId;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -37,9 +39,14 @@ public class OrderService {
     private final GeneSnowflake ids;
     private final StringRedisTemplate redis;
     private final int node;
+    private final MeterRegistry meters;
+    @org.springframework.beans.factory.annotation.Value("${trade.accept-wait-millis:300}")
+    private long waitMillis;
 
     public OrderService(OrderMapper orders, OrderLedger ledger, OrderRouter router, QuoteReader quotes,
-                        TradeRules rules, GeneSnowflake ids, StringRedisTemplate redis, NodeId node) {
+                        TradeRules rules, GeneSnowflake ids, StringRedisTemplate redis, NodeId node,
+                        MeterRegistry meters) {
+        this.meters = meters;
         this.node = node.value();
         this.orders = orders;
         this.ledger = ledger;
@@ -69,15 +76,25 @@ public class OrderService {
             throw new BizException(ErrorCode.DUPLICATE_REQUEST);   // 前一个请求仍在处理中
         }
         try {
+            Timer.Sample t0 = Timer.start(meters);
             OrderPO o = build(userId, clientKey, req);
+            t0.stop(meters.timer("order.phase", "phase", "validate"));
+            Timer.Sample t1 = Timer.start(meters);
             ledger.createAndFreeze(o);
+            t1.stop(meters.timer("order.phase", "phase", "freeze"));
+            Timer.Sample t2 = Timer.start(meters);
             try {
-                // 等引擎处理完首个事件：市价单/可立即成交的限价单返回成交后状态，其余返回挂单状态
-                router.accept(o).get(2, TimeUnit.SECONDS);
+                // 短暂等待引擎处理：多数市价单 50ms 内成交，直接返回成交结果；
+                // 等待上限 300ms（压测发现 2s 上限会在高峰期把 P99 拉到 2s），超时返回「已报」，成交结果靠前端刷新获取
+                router.accept(o).get(waitMillis, TimeUnit.MILLISECONDS);
             } catch (Exception e) {
                 // 超时不影响下单结果，前端轮询/推送获取后续状态
             }
-            return orders.selectById(o.id);
+            t2.stop(meters.timer("order.phase", "phase", o.type == 1 ? "engine_wait_market" : "engine_wait_limit"));
+            Timer.Sample t3 = Timer.start(meters);
+            OrderPO result = orders.selectById(o.id);
+            t3.stop(meters.timer("order.phase", "phase", "reload"));
+            return result;
         } catch (DuplicateKeyException e) {
             return orders.findByClientKey(userId, clientKey);
         } catch (RuntimeException e) {

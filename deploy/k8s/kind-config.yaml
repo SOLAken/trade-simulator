@@ -1,0 +1,8 @@
+# kind 单节点集群；网关 NodePort 30080 映射到宿主机 18080
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: tradesim
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - { containerPort: 30080, hostPort: 18080, protocol: TCP }

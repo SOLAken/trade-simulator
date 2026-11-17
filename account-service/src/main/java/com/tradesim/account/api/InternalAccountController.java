@@ -12,8 +12,10 @@ import org.springframework.web.bind.annotation.*;
 public class InternalAccountController {
     private final LedgerMapper ledger;
     private final FundStore fund;
+    private final Reconciler reconciler;
 
-    public InternalAccountController(LedgerMapper ledger, FundStore fund) {
+    public InternalAccountController(LedgerMapper ledger, FundStore fund, Reconciler reconciler) {
+        this.reconciler = reconciler;
         this.ledger = ledger;
         this.fund = fund;
     }
@@ -26,5 +28,12 @@ public class InternalAccountController {
         if (created) ledger.insertFlow(userId, contestId, contestId, "INIT", null, initCash, 0, 0);
         fund.openAccount(userId, contestId, initCash);
         return Result.ok(created);
+    }
+
+    /** 手动对账（压测后验证用）。 */
+    @GetMapping("/reconcile")
+    public Result<Reconciler.Report> reconcile(@RequestParam long contestId,
+                                               @RequestParam(defaultValue = "3000") long settleMillis) throws InterruptedException {
+        return Result.ok(reconciler.run(contestId, settleMillis));
     }
 }

@@ -39,4 +39,11 @@ public interface LedgerMapper {
 
     @Select("SELECT symbol, qty, frozen FROM t_position WHERE user_id = #{uid} AND contest_id = #{cid} AND qty <> 0")
     List<Map<String, Object>> positions(@Param("uid") long uid, @Param("cid") long cid);
+
+    /** 无分片键：ShardingSphere 广播到 2 库 × 4 表并归并结果（仅对账用）。 */
+    @Select("SELECT user_id, cash, frozen FROM t_account WHERE contest_id = #{cid}")
+    List<Map<String, Object>> allAccounts(@Param("cid") long cid);
+
+    @Select("SELECT user_id, symbol, qty, frozen FROM t_position WHERE contest_id = #{cid}")
+    List<Map<String, Object>> allPositions(@Param("cid") long cid);
 }
