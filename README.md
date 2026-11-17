@@ -21,6 +21,8 @@ Vue3 ──► Gateway ──►│ user   market   trade   account   risk   ran
         Redis(热数据/幂等/ZSet) ◄── 全部
         Flink：order.event/trade.event ──► risk.alert / rank.update
 ```
+## 截图
+<img width="2534" height="1291" alt="截屏2026-11-17 21 57 42" src="https://github.com/user-attachments/assets/4fd52298-f640-40a5-9610-54bb9dfa5e83" />
 
 ## 快速开始
 
