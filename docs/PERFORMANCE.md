@@ -79,7 +79,38 @@
 - 代价：ZGC 每操作分配多约 25%，并发标记/重定位占用后台 CPU。
 - **选择分代 ZGC**（镜像默认）。注意：两组各跑一次、先后进行，延迟差异含机器噪声；STW 的数量级差异是确定的。
 
-## 4. 其他运行时数据
+## 4. 容器内存（K8s 部署实测）
+
+首次部署全部 Pod OOMKilled（640Mi / 768Mi 容器，堆占 70% / 55%）。在 Pod 内看 cgroup：
+
+| 项 | 用量 | 来源 |
+|---|---|---|
+| shmem | 314Mi | ZGC 用 memfd 共享内存承载堆，计入 cgroup |
+| anon | 417Mi | 元空间、代码缓存、87 个线程栈、glibc 每线程 malloc arena、Netty 直接内存 |
+
+修正：
+- 堆外显式封顶：`MALLOC_ARENA_MAX=2`、`MaxDirectMemorySize=64m`、`ReservedCodeCacheSize=96m`、`MaxMetaspaceSize=192m`、`-Xss512k`
+- 按服务选收集器：无状态服务 G1（小堆更省），撮合服务保留分代 ZGC（1Gi 容器、堆 40%）
+
+| 结果 | 内存 |
+|---|---|
+| 6 个 G1 服务 | 269–313Mi（此前 640Mi 都放不下） |
+| trade-service（ZGC） | 689–736Mi / 1Gi |
+
+## 5. K8s 弹性扩容（kind，单节点）
+
+`RATE=300 DURATION=180s ./deploy/scripts/hpa-demo.sh`：
+
+| 项 | 结果 |
+|---|---|
+| HPA | gateway 2 → **6**、trade-service 2 → **4**（均到上限），施压约 20 秒内完成扩容 |
+| 新增撮合节点 | `trade-service-2/3`，StatefulSet 序号即节点号，雪花 ID 不冲突 |
+| 吞吐 / 延迟 | 持续 **290 单/秒**，P95 488ms；最大 12.9s 出现在新 Pod 冷启动阶段 |
+| 压测后对账（集群内） | **3114 个账户、17075 条持仓，零差异** |
+
+注意：Sentinel 网关规则是单实例生效，6 个网关副本时总阈值随副本数放大；严格的全局限流需要 Sentinel 集群流控（Token Server），列为后续改进。
+
+## 6. 其他运行时数据
 
 | 项 | 数据 |
 |---|---|

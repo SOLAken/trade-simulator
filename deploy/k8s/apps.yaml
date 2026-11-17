@@ -20,7 +20,7 @@ spec:
           imagePullPolicy: IfNotPresent
           ports: [{ containerPort: 8080 }]
           envFrom: [{ configMapRef: { name: app-env } }]
-          resources: { requests: { cpu: 200m, memory: 384Mi }, limits: { memory: 640Mi } }
+          resources: { requests: { cpu: 200m, memory: 512Mi }, limits: { memory: 768Mi } }
           startupProbe: { httpGet: { path: /actuator/health/liveness, port: 8080 }, periodSeconds: 3, failureThreshold: 30 }
           readinessProbe: { httpGet: { path: /actuator/health/readiness, port: 8080 }, periodSeconds: 5 }
           livenessProbe: { httpGet: { path: /actuator/health/liveness, port: 8080 }, periodSeconds: 10 }
@@ -36,110 +36,110 @@ spec:
 ---
 apiVersion: apps/v1
 kind: Deployment
-metadata: { name: user-service 8081 1, namespace: tradesim, labels: { app: user-service 8081 1 } }
+metadata: { name: user-service, namespace: tradesim, labels: { app: user-service } }
 spec:
-  replicas: 
-  selector: { matchLabels: { app: user-service 8081 1 } }
+  replicas: 1
+  selector: { matchLabels: { app: user-service } }
   template:
-    metadata: { labels: { app: user-service 8081 1 } }
+    metadata: { labels: { app: user-service } }
     spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: app
-          image: tradesim/user-service 8081 1atest
+          image: tradesim/user-service:latest
           imagePullPolicy: IfNotPresent
-          ports: [{ containerPort:  }]
+          ports: [{ containerPort: 8081 }]
           envFrom: [{ configMapRef: { name: app-env } }]
-          resources: { requests: { cpu: 100m, memory: 384Mi }, limits: { memory: 640Mi } }
-          startupProbe: { httpGet: { path: /actuator/health/liveness, port:  }, periodSeconds: 3, failureThreshold: 30 }
-          readinessProbe: { httpGet: { path: /actuator/health/readiness, port:  }, periodSeconds: 5 }
-          livenessProbe: { httpGet: { path: /actuator/health/liveness, port:  }, periodSeconds: 10 }
+          resources: { requests: { cpu: 100m, memory: 512Mi }, limits: { memory: 768Mi } }
+          startupProbe: { httpGet: { path: /actuator/health/liveness, port: 8081 }, periodSeconds: 3, failureThreshold: 30 }
+          readinessProbe: { httpGet: { path: /actuator/health/readiness, port: 8081 }, periodSeconds: 5 }
+          livenessProbe: { httpGet: { path: /actuator/health/liveness, port: 8081 }, periodSeconds: 10 }
           lifecycle: { preStop: { exec: { command: ["sleep", "5"] } } }
 ---
 apiVersion: apps/v1
 kind: Deployment
-metadata: { name: market-service 8082 2, namespace: tradesim, labels: { app: market-service 8082 2 } }
+metadata: { name: market-service, namespace: tradesim, labels: { app: market-service } }
 spec:
-  replicas: 
-  selector: { matchLabels: { app: market-service 8082 2 } }
+  replicas: 2   # Redis 租约保证只有一个实例生成行情，主挂了约 3s 内另一个接管
+  selector: { matchLabels: { app: market-service } }
   template:
-    metadata: { labels: { app: market-service 8082 2 } }
+    metadata: { labels: { app: market-service } }
     spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: app
-          image: tradesim/market-service 8082 2atest
+          image: tradesim/market-service:latest
           imagePullPolicy: IfNotPresent
-          ports: [{ containerPort:  }]
+          ports: [{ containerPort: 8082 }]
           envFrom: [{ configMapRef: { name: app-env } }]
-          resources: { requests: { cpu: 100m, memory: 384Mi }, limits: { memory: 640Mi } }
-          startupProbe: { httpGet: { path: /actuator/health/liveness, port:  }, periodSeconds: 3, failureThreshold: 30 }
-          readinessProbe: { httpGet: { path: /actuator/health/readiness, port:  }, periodSeconds: 5 }
-          livenessProbe: { httpGet: { path: /actuator/health/liveness, port:  }, periodSeconds: 10 }
+          resources: { requests: { cpu: 100m, memory: 512Mi }, limits: { memory: 768Mi } }
+          startupProbe: { httpGet: { path: /actuator/health/liveness, port: 8082 }, periodSeconds: 3, failureThreshold: 30 }
+          readinessProbe: { httpGet: { path: /actuator/health/readiness, port: 8082 }, periodSeconds: 5 }
+          livenessProbe: { httpGet: { path: /actuator/health/liveness, port: 8082 }, periodSeconds: 10 }
           lifecycle: { preStop: { exec: { command: ["sleep", "5"] } } }
 ---
 apiVersion: apps/v1
 kind: Deployment
-metadata: { name: account-service 8084 1, namespace: tradesim, labels: { app: account-service 8084 1 } }
+metadata: { name: account-service, namespace: tradesim, labels: { app: account-service } }
 spec:
-  replicas: 
-  selector: { matchLabels: { app: account-service 8084 1 } }
+  replicas: 1
+  selector: { matchLabels: { app: account-service } }
   template:
-    metadata: { labels: { app: account-service 8084 1 } }
+    metadata: { labels: { app: account-service } }
     spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: app
-          image: tradesim/account-service 8084 1atest
+          image: tradesim/account-service:latest
           imagePullPolicy: IfNotPresent
-          ports: [{ containerPort:  }]
+          ports: [{ containerPort: 8084 }]
           envFrom: [{ configMapRef: { name: app-env } }]
-          resources: { requests: { cpu: 100m, memory: 384Mi }, limits: { memory: 640Mi } }
-          startupProbe: { httpGet: { path: /actuator/health/liveness, port:  }, periodSeconds: 3, failureThreshold: 30 }
-          readinessProbe: { httpGet: { path: /actuator/health/readiness, port:  }, periodSeconds: 5 }
-          livenessProbe: { httpGet: { path: /actuator/health/liveness, port:  }, periodSeconds: 10 }
+          resources: { requests: { cpu: 100m, memory: 512Mi }, limits: { memory: 768Mi } }
+          startupProbe: { httpGet: { path: /actuator/health/liveness, port: 8084 }, periodSeconds: 3, failureThreshold: 30 }
+          readinessProbe: { httpGet: { path: /actuator/health/readiness, port: 8084 }, periodSeconds: 5 }
+          livenessProbe: { httpGet: { path: /actuator/health/liveness, port: 8084 }, periodSeconds: 10 }
           lifecycle: { preStop: { exec: { command: ["sleep", "5"] } } }
 ---
 apiVersion: apps/v1
 kind: Deployment
-metadata: { name: risk-service 8085 1, namespace: tradesim, labels: { app: risk-service 8085 1 } }
+metadata: { name: risk-service, namespace: tradesim, labels: { app: risk-service } }
 spec:
-  replicas: 
-  selector: { matchLabels: { app: risk-service 8085 1 } }
+  replicas: 1
+  selector: { matchLabels: { app: risk-service } }
   template:
-    metadata: { labels: { app: risk-service 8085 1 } }
+    metadata: { labels: { app: risk-service } }
     spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: app
-          image: tradesim/risk-service 8085 1atest
+          image: tradesim/risk-service:latest
           imagePullPolicy: IfNotPresent
-          ports: [{ containerPort:  }]
+          ports: [{ containerPort: 8085 }]
           envFrom: [{ configMapRef: { name: app-env } }]
-          resources: { requests: { cpu: 100m, memory: 384Mi }, limits: { memory: 640Mi } }
-          startupProbe: { httpGet: { path: /actuator/health/liveness, port:  }, periodSeconds: 3, failureThreshold: 30 }
-          readinessProbe: { httpGet: { path: /actuator/health/readiness, port:  }, periodSeconds: 5 }
-          livenessProbe: { httpGet: { path: /actuator/health/liveness, port:  }, periodSeconds: 10 }
+          resources: { requests: { cpu: 100m, memory: 512Mi }, limits: { memory: 768Mi } }
+          startupProbe: { httpGet: { path: /actuator/health/liveness, port: 8085 }, periodSeconds: 3, failureThreshold: 30 }
+          readinessProbe: { httpGet: { path: /actuator/health/readiness, port: 8085 }, periodSeconds: 5 }
+          livenessProbe: { httpGet: { path: /actuator/health/liveness, port: 8085 }, periodSeconds: 10 }
           lifecycle: { preStop: { exec: { command: ["sleep", "5"] } } }
 ---
 apiVersion: apps/v1
 kind: Deployment
-metadata: { name: rank-service 8086 1, namespace: tradesim, labels: { app: rank-service 8086 1 } }
+metadata: { name: rank-service, namespace: tradesim, labels: { app: rank-service } }
 spec:
-  replicas: 
-  selector: { matchLabels: { app: rank-service 8086 1 } }
+  replicas: 1
+  selector: { matchLabels: { app: rank-service } }
   template:
-    metadata: { labels: { app: rank-service 8086 1 } }
+    metadata: { labels: { app: rank-service } }
     spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: app
-          image: tradesim/rank-service 8086 1atest
+          image: tradesim/rank-service:latest
           imagePullPolicy: IfNotPresent
-          ports: [{ containerPort:  }]
+          ports: [{ containerPort: 8086 }]
           envFrom: [{ configMapRef: { name: app-env } }]
-          resources: { requests: { cpu: 100m, memory: 384Mi }, limits: { memory: 640Mi } }
-          startupProbe: { httpGet: { path: /actuator/health/liveness, port:  }, periodSeconds: 3, failureThreshold: 30 }
-          readinessProbe: { httpGet: { path: /actuator/health/readiness, port:  }, periodSeconds: 5 }
-          livenessProbe: { httpGet: { path: /actuator/health/liveness, port:  }, periodSeconds: 10 }
+          resources: { requests: { cpu: 100m, memory: 512Mi }, limits: { memory: 768Mi } }
+          startupProbe: { httpGet: { path: /actuator/health/liveness, port: 8086 }, periodSeconds: 3, failureThreshold: 30 }
+          readinessProbe: { httpGet: { path: /actuator/health/readiness, port: 8086 }, periodSeconds: 5 }
+          livenessProbe: { httpGet: { path: /actuator/health/liveness, port: 8086 }, periodSeconds: 10 }
           lifecycle: { preStop: { exec: { command: ["sleep", "5"] } } }

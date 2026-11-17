@@ -14,4 +14,8 @@ data:
   MYSQL1_ADDR: mysql-1:3306
   PG_HOST: timescale
   SENTINEL_DASHBOARD: sentinel-dashboard:8858
-  JAVA_OPTS: "-XX:MaxRAMPercentage=70 -XX:+UseZGC -XX:+ZGenerational -XX:+ExitOnOutOfMemoryError"
+  # 内存预算（768Mi 容器）：堆 50% + 堆外显式封顶。实测未封顶时堆外约 400Mi（87 个线程各自的 glibc
+  # malloc arena、代码缓存、Netty 直接内存），640Mi/768Mi 容器启动即 OOMKilled。
+  # 无状态服务用 G1（小堆下内存占用更省）；撮合服务 trade-service 在 trade.yaml 中单独覆盖为 ZGC。
+  JAVA_OPTS: "-XX:MaxRAMPercentage=50 -XX:+UseG1GC -XX:MaxDirectMemorySize=64m -XX:ReservedCodeCacheSize=96m -XX:MaxMetaspaceSize=192m -Xss512k -XX:+ExitOnOutOfMemoryError"
+  MALLOC_ARENA_MAX: "2"

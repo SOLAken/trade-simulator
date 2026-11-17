@@ -20,7 +20,11 @@ spec:
           imagePullPolicy: IfNotPresent
           ports: [{ containerPort: 8083 }]
           envFrom: [{ configMapRef: { name: app-env } }]
-          resources: { requests: { cpu: 300m, memory: 512Mi }, limits: { memory: 768Mi } }
+          env:
+            # 撮合对尾延迟敏感：分代 ZGC（压测最大 STW 0.24ms vs G1 21ms）。ZGC 堆以共享内存计入 cgroup，堆占比取 40%
+            - name: JAVA_OPTS
+              value: "-XX:MaxRAMPercentage=40 -XX:+UseZGC -XX:+ZGenerational -XX:MaxDirectMemorySize=64m -XX:ReservedCodeCacheSize=96m -XX:MaxMetaspaceSize=192m -Xss512k -XX:+ExitOnOutOfMemoryError"
+          resources: { requests: { cpu: 300m, memory: 768Mi }, limits: { memory: 1Gi } }
           startupProbe: { httpGet: { path: /actuator/health/liveness, port: 8083 }, periodSeconds: 3, failureThreshold: 30 }
           # readiness 在 EngineRecovery（ApplicationRunner）重建订单簿完成后才 UP，恢复期间不接流量
           readinessProbe: { httpGet: { path: /actuator/health/readiness, port: 8083 }, periodSeconds: 5 }

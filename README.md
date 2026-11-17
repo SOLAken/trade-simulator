@@ -46,6 +46,21 @@ docker compose -f deploy/docker-compose.yml --profile infra --profile mq --profi
 cd frontend && npm install && npx vite    # http://localhost:5173
 ```
 
+## Kubernetes 部署（kind）
+```bash
+./deploy/scripts/k8s-up.sh          # 建集群 → 构建/加载镜像 → 部署 → 等待就绪；网关 http://localhost:18080
+GW=http://localhost:18080 ./deploy/scripts/smoke.sh
+RATE=300 ./deploy/scripts/hpa-demo.sh   # 施压观察 HPA 扩容
+./deploy/scripts/k8s-up.sh down     # 删除集群，broker 切回宿主机模式
+```
+中间件仍在 compose 中：kind 节点加入 compose 网络，每个中间件生成无 selector 的 Service + EndpointSlice，
+Pod 内用与 compose 相同的主机名访问。trade-service 为 StatefulSet（序号 = 撮合节点号），gateway / trade 配 HPA。
+
+## 文档
+- [架构设计](docs/ARCHITECTURE.md)：三条核心链路的设计与取舍
+- [性能与调优](docs/PERFORMANCE.md)：JMH、开盘洪峰压测、问题定位过程、GC 对比、容器内存
+- [面试讲解](docs/INTERVIEW.md)：简历描述 + 30 秒问答
+
 ## 验证脚本
 | 脚本 | 内容 |
 |---|---|
@@ -53,6 +68,10 @@ cd frontend && npm install && npx vite    # http://localhost:5173
 | `deploy/scripts/risk-demo.sh` | 模拟挂撤刷单脚本，验证 Flink 识别 → 封禁 → 下单被拒 |
 | `deploy/scripts/pnl-check.sh` | 对比 Flink 实时盈亏与账户实时总资产 |
 | `deploy/scripts/bench.sh` | 撮合引擎 JMH 基准（含 GC profiler） |
+| `deploy/loadtest/open-burst.js` | k6 开盘洪峰压测（100→2000 单/秒） |
+| `deploy/scripts/gc-compare.sh` | 同一压测下 G1 vs 分代 ZGC 的 STW 与延迟对比 |
+| `deploy/scripts/trade-timers.sh` | 下单各阶段耗时（Micrometer） |
+| `curl localhost:8084/internal/account/reconcile?contestId=1` | Redis 与 MySQL 账本两遍对账 |
 
 | 控制台 | 地址 |
 |---|---|
