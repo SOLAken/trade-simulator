@@ -11,10 +11,11 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
-[ -f .env ] && { set -a; . ./.env; set +a; }
+ENV_FILE=""
+[ -f .env ] && { set -a; . ./.env; set +a; ENV_FILE="--env-file .env"; }
 CLUSTER=tradesim
 NET=tradesim_default
-COMPOSE="docker compose -f deploy/docker-compose.yml --profile infra --profile mq --profile flink"
+COMPOSE="docker compose -f deploy/docker-compose.yml $ENV_FILE --profile infra --profile mq --profile flink"
 
 if [ "${1:-}" = down ]; then
   kind delete cluster --name $CLUSTER
@@ -22,11 +23,13 @@ if [ "${1:-}" = down ]; then
   exit 0
 fi
 
-echo "▶ 停止宿主机上的服务（避免与集群内实例同时注册到 Nacos）"
+echo "▶ 停止宿主机上的服务和纯 Docker 模式的应用容器（避免同时注册到 Nacos、以同一节点号重复撮合）"
 ./deploy/scripts/run-local.sh stop >/dev/null
+docker compose -f deploy/docker-compose.yml $ENV_FILE --profile infra --profile mq --profile flink --profile app --profile flink-jobs rm -sf gateway user-service market-service trade-service account-service risk-service rank-service web flink-submit >/dev/null
 
 echo "▶ RocketMQ broker 切换为容器网络模式"
 BROKER_IP=rmq-broker $COMPOSE up -d rmq-broker
+./deploy/scripts/rocketmq-topics.sh >/dev/null    # 等 broker 重新注册并确认 topic 就绪
 
 echo "▶ kind 集群"
 kind get clusters | grep -qx $CLUSTER || kind create cluster --config deploy/k8s/kind-config.yaml

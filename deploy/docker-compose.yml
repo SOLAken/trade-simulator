@@ -4,6 +4,8 @@
 # profiles: infra（存储+注册配置）、mq（Kafka+RocketMQ）、flink（Flink 集群）、
 #           app（7 个服务 + 前端，镜像内构建）、flink-jobs（向 Flink 提交作业，需同时开 flink）
 # 口令等变量从仓库根目录 .env 读取（见 .env.example），未设置时使用开发默认值
+# 端口：除前端 web 外，所有端口默认只绑定 127.0.0.1（BIND_ADDR）。Linux 上 Docker 发布的端口
+# 会绕过 ufw/firewalld，绑定到 0.0.0.0 等于把 MySQL / Redis / Nacos 直接暴露到公网
 name: tradesim
 
 x-mem: &small
@@ -50,7 +52,7 @@ services:
     image: mysql:8.0.39
     environment: { MYSQL_ROOT_PASSWORD: "${MYSQL_PASSWORD:-root}" }
     command: [--character-set-server=utf8mb4, --collation-server=utf8mb4_0900_ai_ci, --innodb-buffer-pool-size=256M, --default-time-zone=+00:00]   # 统一存 UTC，前端按本地时区展示
-    ports: ["3306:3306"]
+    ports: ["${BIND_ADDR:-127.0.0.1}:3306:3306"]
     volumes:
       - ./mysql/init-0.sql:/docker-entrypoint-initdb.d/init.sql:ro
       - mysql0:/var/lib/mysql
@@ -62,7 +64,7 @@ services:
     image: mysql:8.0.39
     environment: { MYSQL_ROOT_PASSWORD: "${MYSQL_PASSWORD:-root}" }
     command: [--character-set-server=utf8mb4, --collation-server=utf8mb4_0900_ai_ci, --innodb-buffer-pool-size=256M, --default-time-zone=+00:00]   # 统一存 UTC，前端按本地时区展示
-    ports: ["3307:3306"]
+    ports: ["${BIND_ADDR:-127.0.0.1}:3307:3306"]
     volumes:
       - ./mysql/init-1.sql:/docker-entrypoint-initdb.d/init.sql:ro
       - mysql1:/var/lib/mysql
@@ -73,7 +75,7 @@ services:
     profiles: [infra]
     image: timescale/timescaledb:2.16.1-pg16
     environment: { POSTGRES_PASSWORD: "${PG_PASSWORD:-postgres}", POSTGRES_DB: market }
-    ports: ["5432:5432"]
+    ports: ["${BIND_ADDR:-127.0.0.1}:5432:5432"]
     volumes:
       - ./timescale/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
       - tsdb:/var/lib/postgresql/data
@@ -84,7 +86,7 @@ services:
     profiles: [infra]
     image: redis:7.2.5
     command: [redis-server, --appendonly, "yes", --maxmemory, 400mb]
-    ports: ["6379:6379"]
+    ports: ["${BIND_ADDR:-127.0.0.1}:6379:6379"]
     healthcheck: { test: ["CMD", "redis-cli", "ping"], interval: 5s, retries: 30 }
     <<: *small
 
@@ -96,7 +98,7 @@ services:
       NACOS_AUTH_ENABLE: "false"
       JVM_XMS: 256m
       JVM_XMX: 512m
-    ports: ["8848:8848", "9848:9848"]
+    ports: ["${BIND_ADDR:-127.0.0.1}:8848:8848", "${BIND_ADDR:-127.0.0.1}:9848:9848"]
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8848/nacos/v1/console/health/readiness || exit 1"]
       interval: 5s
@@ -106,14 +108,14 @@ services:
   sentinel-dashboard:
     profiles: [infra]
     image: bladex/sentinel-dashboard:1.8.8
-    ports: ["8858:8858"]
+    ports: ["${BIND_ADDR:-127.0.0.1}:8858:8858"]
     <<: *small
 
   # ---------------- mq ----------------
   kafka:
     profiles: [mq]
     image: apache/kafka:3.7.1
-    ports: ["9092:9092"]
+    ports: ["${BIND_ADDR:-127.0.0.1}:9092:9092"]
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
@@ -135,8 +137,17 @@ services:
     image: apache/rocketmq:5.3.1
     command: sh mqnamesrv
     environment: { JAVA_OPT_EXT: "-Xms128m -Xmx256m" }
-    ports: ["9876:9876"]
+    ports: ["${BIND_ADDR:-127.0.0.1}:9876:9876"]
     <<: *small
+
+  # broker 存储放命名卷：切换 BROKER_IP 会重建容器，没有卷时 topic、消费位点和未投递的定时消息全部丢失，
+  # 存活的消费者还拿着旧位点，会跳过新队列里的第一条消息。命名卷默认属主 root，broker 以 uid 3000 运行，先修正属主
+  rmq-store-init:
+    profiles: [mq]
+    image: busybox:1.36
+    command: ["sh", "-c", "chown -R 3000:3000 /store"]
+    volumes:
+      - rmqstore:/store
 
   rmq-broker:
     profiles: [mq]
@@ -144,10 +155,13 @@ services:
     # broker 对外宣告的地址：宿主机跑服务时用 127.0.0.1（默认）；服务在容器/K8s 中时 BROKER_IP=rmq-broker
     command: ["sh", "-c", "sed 's/^brokerIP1=.*/brokerIP1=${BROKER_IP:-127.0.0.1}/' /home/rocketmq/broker.conf > /tmp/broker.conf && exec sh mqbroker -n rmq-namesrv:9876 -c /tmp/broker.conf"]
     environment: { JAVA_OPT_EXT: "-Xms256m -Xmx512m -Xmn128m" }
-    ports: ["10909:10909", "10911:10911", "10912:10912"]
+    ports: ["${BIND_ADDR:-127.0.0.1}:10909:10909", "${BIND_ADDR:-127.0.0.1}:10911:10911", "${BIND_ADDR:-127.0.0.1}:10912:10912"]
     volumes:
       - ./rocketmq/broker.conf:/home/rocketmq/broker.conf:ro
-    depends_on: [rmq-namesrv]
+      - rmqstore:/home/rocketmq/store
+    depends_on:
+      rmq-namesrv: { condition: service_started }
+      rmq-store-init: { condition: service_completed_successfully }
     deploy: { resources: { limits: { memory: 1g } } }
 
   rmq-dashboard:
@@ -155,7 +169,7 @@ services:
     image: apacherocketmq/rocketmq-dashboard:1.0.0
     platform: linux/amd64   # 官方仅有 amd64 镜像，Apple Silicon 走 Rosetta
     environment: { JAVA_OPTS: "-Drocketmq.namesrv.addr=rmq-namesrv:9876 -Xmx256m" }
-    ports: ["8180:8080"]
+    ports: ["${BIND_ADDR:-127.0.0.1}:8180:8080"]
     depends_on: [rmq-namesrv]
     <<: *small
 
@@ -175,7 +189,7 @@ services:
       flink-init: { condition: service_completed_successfully }
     image: flink:1.20.0-scala_2.12-java17
     command: jobmanager
-    ports: ["8090:8081"]
+    ports: ["${BIND_ADDR:-127.0.0.1}:8090:8081"]
     environment:
       FLINK_PROPERTIES: |
         jobmanager.rpc.address: flink-jobmanager
@@ -232,7 +246,7 @@ services:
     <<: *svc
     build: { <<: *svc-build, args: { MODULE: gateway } }
     image: tradesim/gateway:compose
-    ports: ["8080:8080"]
+    ports: ["${BIND_ADDR:-127.0.0.1}:8080:8080"]
 
   user-service:
     <<: *svc
@@ -274,7 +288,7 @@ services:
     profiles: [app]
     build: { context: ../frontend }
     image: tradesim/web:compose
-    ports: ["5173:80"]
+    ports: ["${WEB_BIND:-0.0.0.0}:${WEB_PORT:-5173}:80"]
     depends_on: [gateway]
     restart: unless-stopped
     <<: *small
@@ -290,3 +304,4 @@ volumes:
   mysql1: {}
   tsdb: {}
   flinkdata: {}
+  rmqstore: {}

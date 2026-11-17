@@ -1,11 +1,12 @@
 # 统一入口：make help 查看全部命令
 SHELL := /bin/bash
-COMPOSE := docker compose -f deploy/docker-compose.yml
+# compose 默认只读 deploy/.env，这里显式加载仓库根目录的 .env（存在时）
+COMPOSE := docker compose -f deploy/docker-compose.yml $(if $(wildcard .env),--env-file .env)
 ALL_PROFILES := --profile infra --profile mq --profile flink --profile app --profile flink-jobs
 APP_PROFILES := --profile infra --profile mq --profile app
 
 .DEFAULT_GOAL := help
-.PHONY: help check docker-up docker-up-flink docker-down docker-down-volumes docker-ps docker-logs \
+.PHONY: help check _leave-other-modes docker-up docker-up-flink docker-down docker-down-volumes docker-ps docker-logs \
         dev dev-flink web stop infra-down test smoke flink bench k8s k8s-down
 
 help: ## 显示帮助
@@ -17,15 +18,23 @@ check: ## 环境自检（本机开发所需）
 # ---------------- 方式 A：纯 Docker（只需要 Docker） ----------------
 docker-up: ## 纯 Docker 一键启动全栈（首次构建约 5–10 分钟）→ http://localhost:5173
 	@MODE=docker ./deploy/scripts/check-env.sh
-	@./deploy/scripts/run-local.sh stop >/dev/null 2>&1 || true
-	BROKER_IP=rmq-broker $(COMPOSE) $(APP_PROFILES) up -d --build --wait --wait-timeout 600
+	@$(MAKE) --no-print-directory _leave-other-modes
+	BROKER_IP=rmq-broker $(COMPOSE) $(APP_PROFILES) up -d --build
+	@./deploy/scripts/wait-gateway.sh
 	@echo "✓ 已启动：http://localhost:5173"
 
 docker-up-flink: ## 纯 Docker 全栈 + Flink 实时风控/收益（内存建议 ≥ 12GB）
 	@NEED_GB=12 MODE=docker ./deploy/scripts/check-env.sh
-	@./deploy/scripts/run-local.sh stop >/dev/null 2>&1 || true
+	@$(MAKE) --no-print-directory _leave-other-modes
 	BROKER_IP=rmq-broker $(COMPOSE) $(APP_PROFILES) --profile flink --profile flink-jobs up -d --build
+	@./deploy/scripts/wait-gateway.sh
 	@echo "✓ 已启动：http://localhost:5173  Flink UI: http://localhost:8090"
+
+# 三种方式共用端口、Nacos 和撮合节点号，同时运行会重复撮合：进入纯 Docker 前先停掉另外两种
+_leave-other-modes:
+	@./deploy/scripts/run-local.sh stop >/dev/null 2>&1 || true
+	@if command -v kind >/dev/null && kind get clusters 2>/dev/null | grep -qx tradesim; then \
+	  echo "✗ kind 集群 tradesim 正在运行，请先执行 make k8s-down"; exit 1; fi
 
 docker-ps: ## 查看容器状态
 	$(COMPOSE) $(ALL_PROFILES) ps
@@ -74,6 +83,7 @@ bench: ## 撮合引擎 JMH 基准
 
 # ---------------- 方式 C：Kubernetes（kind） ----------------
 k8s: ## 部署到本地 kind 集群（中间件仍在 compose）→ 网关 http://localhost:18080
+	@MODE=k8s ./deploy/scripts/check-env.sh
 	./deploy/scripts/infra-up.sh
 	./deploy/scripts/k8s-up.sh
 

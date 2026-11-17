@@ -42,7 +42,7 @@ make docker-up            # 首次需要在镜像里构建，约 5–10 分钟
 | `make docker-down` | 停止服务，保留数据 |
 | `make docker-down-volumes` | 停止服务并清空数据 |
 
-没有 `make` 时，可以直接运行：
+没有 `make` 时，可以直接运行（有 `.env` 时加上 `--env-file .env`）：
 ```bash
 BROKER_IP=rmq-broker docker compose -f deploy/docker-compose.yml --profile infra --profile mq --profile app up -d --build
 ```
@@ -101,7 +101,8 @@ make k8s-down                             # 删除集群，RocketMQ broker 切�
 
 | 项 | 要求 |
 |---|---|
-| Docker | Docker Desktop / Docker Engine 24+，需要 compose v2 |
+| Docker | Docker Desktop / Docker Engine 24+，compose v2.20+ |
+| 验证脚本 | `make smoke` 需要 curl 和 jq（部署本身不需要） |
 | Docker 内存 | 方式 A 至少 10GB；加 Flink 至少 12GB |
 | 架构 | amd64 / arm64 均可（只有 RocketMQ Dashboard 是 amd64 镜像，Apple Silicon 上通过 Rosetta 运行） |
 
@@ -113,7 +114,7 @@ make k8s-down                             # 删除集群，RocketMQ broker 切�
 cp .env.example .env    # 修改 MYSQL_PASSWORD / PG_PASSWORD / JWT_SECRET
 ```
 
-compose、本机启动脚本和 `k8s-up.sh` 会读取同一个 `.env`。**公网部署前必须修改 `JWT_SECRET`。** 数据库口令只在数据卷第一次初始化时生效，改口令要先执行 `make docker-down-volumes`。
+`make` 命令、本机启动脚本和 `k8s-up.sh` 会读取同一个 `.env`。网关、中间件和控制台的端口默认只绑定 127.0.0.1，只有前端对外，详见 [部署指南](docs/DEPLOY.md#部署到服务器公网)。**公网部署前必须修改 `JWT_SECRET`。** 数据库口令只在数据卷第一次初始化时生效，改口令要先执行 `make docker-down-volumes`。
 
 业务规则（费率、涨跌停幅度、交易日长度）在 `deploy/nacos/trade-rules.yaml`，风控阈值在 `deploy/nacos/risk-rules.yaml`。在 Nacos 控制台修改后立即生效，不需要重启服务。
 
