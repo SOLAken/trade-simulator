@@ -11,6 +11,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
+[ -f .env ] && { set -a; . ./.env; set +a; }
 CLUSTER=tradesim
 NET=tradesim_default
 COMPOSE="docker compose -f deploy/docker-compose.yml --profile infra --profile mq --profile flink"
@@ -72,6 +73,13 @@ for m in gateway user-service market-service trade-service account-service risk-
 done
 
 echo "▶ 部署"
+# 口令放 Secret（取自 .env，未设置时为开发默认值），不进 ConfigMap / 仓库
+kubectl create namespace tradesim --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+kubectl -n tradesim create secret generic app-secret \
+  --from-literal=MYSQL_PASSWORD="${MYSQL_PASSWORD:-root}" \
+  --from-literal=PG_PASSWORD="${PG_PASSWORD:-postgres}" \
+  --from-literal=JWT_SECRET="${JWT_SECRET:-dev-only-insecure-secret-0123456789abcdef0123}" \
+  --dry-run=client -o yaml | kubectl apply -f - >/dev/null
 kubectl apply -k deploy/k8s
 # 镜像 tag 是 latest：重新部署时强制滚动，拿到刚加载的新镜像
 kubectl -n tradesim rollout restart deployment >/dev/null

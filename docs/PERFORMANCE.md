@@ -1,6 +1,6 @@
 # 性能与调优报告
 
-环境：MacBook（10 核 / 24GB），中间件在 Docker Desktop（15.6GB VM），7 个服务在宿主机 JVM（JDK 21）。
+环境：10 核 / 24GB 笔记本，中间件在 Docker Desktop（分配 15.6GB），7 个服务在宿主机 JVM（JDK 21）。
 所有数据可复现：`deploy/scripts/bench.sh`、`deploy/loadtest/open-burst.js`、`deploy/scripts/gc-compare.sh`。
 
 ## 1. 撮合引擎（JMH）

@@ -19,7 +19,7 @@ spec:
           image: tradesim/trade-service:latest
           imagePullPolicy: IfNotPresent
           ports: [{ containerPort: 8083 }]
-          envFrom: [{ configMapRef: { name: app-env } }]
+          envFrom: [{ configMapRef: { name: app-env } }, { secretRef: { name: app-secret } }]
           env:
             # 撮合对尾延迟敏感：分代 ZGC（压测最大 STW 0.24ms vs G1 21ms）。ZGC 堆以共享内存计入 cgroup，堆占比取 40%
             - name: JAVA_OPTS

@@ -3,7 +3,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
-export JAVA_HOME=${JAVA_HOME:-/opt/homebrew/opt/openjdk@21}
+source "$(dirname "$0")/lib.sh"
 TAG=$(git rev-parse --short HEAD)
 [ "${SKIP_BUILD:-}" = 1 ] || mvn -q -B package -DskipTests
 for m in gateway user-service market-service trade-service account-service risk-service rank-service; do

@@ -29,7 +29,7 @@ spring:
   datasource:
     url: jdbc:postgresql://${PG_HOST:127.0.0.1}:5432/market?reWriteBatchedInserts=true
     username: postgres
-    password: postgres
+    password: ${PG_PASSWORD:postgres}
   kafka:
     producer:
       acks: 1

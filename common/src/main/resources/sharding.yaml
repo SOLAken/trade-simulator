@@ -14,14 +14,14 @@ dataSources:
     driverClassName: com.mysql.cj.jdbc.Driver
     jdbcUrl: jdbc:mysql://$${MYSQL0_ADDR::127.0.0.1:3306}/tradesim_0?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&rewriteBatchedStatements=true&useServerPrepStmts=true&cachePrepStmts=true&prepStmtCacheSize=256&prepStmtCacheSqlLimit=2048&useLocalSessionState=true
     username: root
-    password: root
+    password: $${MYSQL_PASSWORD::root}
     maximumPoolSize: 20
   ds_1:
     dataSourceClassName: com.zaxxer.hikari.HikariDataSource
     driverClassName: com.mysql.cj.jdbc.Driver
     jdbcUrl: jdbc:mysql://$${MYSQL1_ADDR::127.0.0.1:3307}/tradesim_1?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&rewriteBatchedStatements=true&useServerPrepStmts=true&cachePrepStmts=true&prepStmtCacheSize=256&prepStmtCacheSqlLimit=2048&useLocalSessionState=true
     username: root
-    password: root
+    password: $${MYSQL_PASSWORD::root}
     maximumPoolSize: 20
 
 rules:

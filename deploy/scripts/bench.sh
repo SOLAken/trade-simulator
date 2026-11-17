@@ -5,7 +5,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
-export JAVA_HOME=${JAVA_HOME:-/opt/homebrew/opt/openjdk@21}
+source "$(dirname "$0")/lib.sh"
 mvn -q -B install -pl common -am -DskipTests      # 父 POM + common 进本地仓库，build-classpath 才能解析
 mvn -q -B test-compile -pl trade-service -am -DskipTests
 CP_FILE=$(mktemp)

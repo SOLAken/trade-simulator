@@ -29,7 +29,7 @@ spring:
   datasource:
     url: jdbc:postgresql://${PG_HOST:127.0.0.1}:5432/market?reWriteBatchedInserts=true
     username: postgres
-    password: postgres
+    password: ${PG_PASSWORD:postgres}
 rank:
   snapshot-millis: 30000   # 全量校准周期；实时更新来自 Flink rank.update
   equity-every: 1          # 每次校准都落收益曲线（30s 粒度）

@@ -3,7 +3,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
-export JAVA_HOME=${JAVA_HOME:-/opt/homebrew/opt/openjdk@21}
+source "$(dirname "$0")/lib.sh"
 mvn -q -B package -pl flink-jobs -am -DskipTests
 JM=tradesim-flink-jobmanager-1
 JAR=/jobs/flink-jobs-0.1.0-SNAPSHOT.jar

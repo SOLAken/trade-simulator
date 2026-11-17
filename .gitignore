@@ -7,3 +7,4 @@ dist/
 *.log
 .run/
 deploy/k8s/infra-endpoints.yaml
+.env
