@@ -1,0 +1,8 @@
+# 交易规则（dataId: trade-rules.yaml）——热更新演示点：改了立即生效，不重启
+trade:
+  fee-rate: 0.0003        # 手续费率（万三）
+  min-fee: 5              # 最低手续费
+  stamp-tax-rate: 0.001   # 印花税（卖出单边）
+  limit-pct: 0.10         # 涨跌停幅度
+  slippage-bps: 5         # 市价单滑点（基点）
+  day-minutes: 30         # 一个交易日的真实分钟数

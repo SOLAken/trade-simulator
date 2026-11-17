@@ -1,0 +1,4 @@
+risk:
+  max-orders-per-10s: 20
+  max-cancel-ratio: 0.8
+  abnormal-return-zscore: 4.0

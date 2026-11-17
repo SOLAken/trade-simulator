@@ -1,0 +1,3 @@
+CREATE DATABASE IF NOT EXISTS tradesim_0 DEFAULT CHARSET utf8mb4;
+-- 非分片的全局库（用户、比赛）只放在 ds0
+CREATE DATABASE IF NOT EXISTS tradesim_global DEFAULT CHARSET utf8mb4;

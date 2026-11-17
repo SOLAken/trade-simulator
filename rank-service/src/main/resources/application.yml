@@ -1,0 +1,27 @@
+server:
+  port: 8086
+spring:
+  application:
+    name: rank-service
+  threads:
+    virtual:
+      enabled: true
+  cloud:
+    nacos:
+      server-addr: ${NACOS_ADDR:127.0.0.1:8848}
+      username: nacos
+      password: nacos
+      discovery:
+        namespace: ${NACOS_NS:}
+      config:
+        namespace: ${NACOS_NS:}
+        file-extension: yaml
+  config:
+    import:
+      - optional:nacos:common.yaml
+      - optional:nacos:${spring.application.name}.yaml?refreshEnabled=true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,refresh

@@ -1,0 +1,56 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: gateway
+  threads:
+    virtual:
+      enabled: true
+  cloud:
+    nacos:
+      server-addr: ${NACOS_ADDR:127.0.0.1:8848}
+      username: nacos
+      password: nacos
+      discovery:
+        namespace: ${NACOS_NS:}
+      config:
+        namespace: ${NACOS_NS:}
+        file-extension: yaml
+  config:
+    import:
+      - optional:nacos:common.yaml
+      - optional:nacos:${spring.application.name}.yaml?refreshEnabled=true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,refresh
+---
+spring:
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: false
+      routes:
+        - id: user
+          uri: lb://user-service
+          predicates: [Path=/api/user/**]
+        - id: market
+          uri: lb://market-service
+          predicates: [Path=/api/market/**]
+        - id: market-ws
+          uri: lb:ws://market-service
+          predicates: [Path=/ws/market/**]
+        - id: trade
+          uri: lb://trade-service
+          predicates: [Path=/api/trade/**]
+        - id: account
+          uri: lb://account-service
+          predicates: [Path=/api/account/**]
+        - id: rank
+          uri: lb://rank-service
+          predicates: [Path=/api/rank/**]
+        - id: rank-ws
+          uri: lb:ws://rank-service
+          predicates: [Path=/ws/rank/**]

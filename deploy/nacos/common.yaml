@@ -1,0 +1,12 @@
+# 所有服务共享的基础配置（Nacos dataId: common.yaml, group: DEFAULT_GROUP）
+spring:
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: 6379
+  kafka:
+    bootstrap-servers: ${KAFKA_ADDR:127.0.0.1:9092}
+rocketmq:
+  name-server: ${RMQ_NAMESRV:127.0.0.1:9876}
+tradesim:
+  jwt-secret: change-me-in-prod-0123456789abcdef0123456789abcdef
