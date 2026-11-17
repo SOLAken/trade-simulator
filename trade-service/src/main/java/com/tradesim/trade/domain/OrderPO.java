@@ -26,6 +26,7 @@ public class OrderPO {
     public Integer status;
     public String rejectReason;
     public Integer tradingDay;
+    public Integer node;
     public LocalDateTime createdAt;
     public LocalDateTime updatedAt;
 }

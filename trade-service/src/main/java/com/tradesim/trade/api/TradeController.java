@@ -17,8 +17,11 @@ public class TradeController {
     private final OrderService service;
     private final OrderMapper orders;
     private final TradeMapper trades;
+    private final com.tradesim.trade.engine.MatchingEngine engine;
 
-    public TradeController(OrderService service, OrderMapper orders, TradeMapper trades) {
+    public TradeController(OrderService service, OrderMapper orders, TradeMapper trades,
+                           com.tradesim.trade.engine.MatchingEngine engine) {
+        this.engine = engine;
         this.service = service;
         this.orders = orders;
         this.trades = trades;
@@ -48,5 +51,11 @@ public class TradeController {
     @GetMapping("/trades")
     public Result<List<TradePO>> trades(@RequestHeader(Headers.USER_ID) long userId, @RequestParam long contestId) {
         return Result.ok(trades.listByUser(userId, contestId, 100));
+    }
+
+    /** 引擎运行指标：事件数、平均排队+处理延迟、各分片挂单数、RingBuffer 余量、结算积压。 */
+    @GetMapping("/engine/stats")
+    public Result<java.util.Map<String, Object>> stats() {
+        return Result.ok(engine.stats());
     }
 }

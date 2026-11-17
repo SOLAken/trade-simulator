@@ -51,13 +51,27 @@ R4=$(post /api/trade/orders -H "Idempotency-Key: $(uuidgen)" -d '{"contestId":'$
 R5=$(curl -s -X POST "$GW/api/trade/orders" -H 'X-User-Id: 1' -H "Idempotency-Key: x" -d "$BUY")
 [ "$(echo "$R5" | jq -r .code)" = 401 ] && pass "伪造 X-User-Id 被网关拦截" || fail "鉴权绕过: $R5"
 
+echo "▶ 撮合引擎：限价挂单 / 撤单"
+Q=$(curl -s "$GW/api/market/quote/SIM001" | jq .data)
+LOW=$(echo "$Q" | jq .limitDown)
+R6=$(post /api/trade/orders -H "Idempotency-Key: $(uuidgen)" -d '{"contestId":'$CID',"symbol":"SIM001","side":1,"type":2,"qty":200,"price":'$LOW'}')
+LID=$(echo "$R6" | jq -r .data.id)
+[ "$(echo "$R6" | jq .data.status)" = 0 ] && pass "跌停价限价买单挂单中 order=$LID" || fail "挂单失败: $R6"
+FROZEN=$(get "/api/account/overview?contestId=$CID" | jq .data.frozen)
+[ "$FROZEN" -gt 0 ] && pass "挂单冻结资金 $FROZEN 分" || fail "未冻结"
+[ "$(curl -s -X DELETE "$GW/api/trade/orders/$LID" -H "Authorization: Bearer $TOKEN" | jq .data)" = true ] && pass "撤单成功" || fail "撤单失败"
+[ "$(get "/api/account/overview?contestId=$CID" | jq .data.frozen)" = 0 ] && pass "撤单后冻结资金全部退回" || fail "撤单未解冻"
+[ "$(curl -s -X DELETE "$GW/api/trade/orders/$LID" -H "Authorization: Bearer $TOKEN" | jq .data)" = false ] && pass "重复撤单无副作用" || fail "重复撤单异常"
+OV=$(get "/api/account/overview?contestId=$CID")
+
 echo "▶ 账本一致性（等待 RocketMQ 消费）"
-for i in $(seq 1 20); do
+REDIS_CASH=$(echo "$OV" | jq .data.cash)
+for i in $(seq 1 30); do
   L=$(get "/api/account/ledger?contestId=$CID")
-  [ "$(echo "$L" | jq '.data.positions[0].qty // 0')" = 1000 ] && break
+  [ "$(echo "$L" | jq .data.account.cash)" = "$REDIS_CASH" ] && [ "$(echo "$L" | jq .data.account.frozen)" = 0 ] && break
   sleep 1
 done
-REDIS_CASH=$(echo "$OV" | jq .data.cash)
+echo "  （账本收敛用时 ~${i}s）"
 SQL_CASH=$(echo "$L" | jq .data.account.cash)
 [ "$REDIS_CASH" = "$SQL_CASH" ] && pass "Redis 可用资金 = MySQL 账本 = $SQL_CASH 分" || fail "不一致 redis=$REDIS_CASH mysql=$SQL_CASH"
 [ "$(echo "$L" | jq .data.account.frozen)" = 0 ] && pass "MySQL 冻结 = 0" || fail "MySQL 冻结不为 0"

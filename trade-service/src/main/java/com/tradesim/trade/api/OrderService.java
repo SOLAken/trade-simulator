@@ -18,7 +18,10 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import com.tradesim.trade.config.TradeConfig.NodeId;
+
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class OrderService {
@@ -29,9 +32,11 @@ public class OrderService {
     private final TradeRules rules;
     private final GeneSnowflake ids;
     private final StringRedisTemplate redis;
+    private final int node;
 
     public OrderService(OrderMapper orders, OrderLedger ledger, OrderRouter router, QuoteReader quotes,
-                        TradeRules rules, GeneSnowflake ids, StringRedisTemplate redis) {
+                        TradeRules rules, GeneSnowflake ids, StringRedisTemplate redis, NodeId node) {
+        this.node = node.value();
         this.orders = orders;
         this.ledger = ledger;
         this.router = router;
@@ -58,7 +63,12 @@ public class OrderService {
         try {
             OrderPO o = build(userId, clientKey, req);
             ledger.createAndFreeze(o);
-            router.accept(o);
+            try {
+                // 等引擎处理完首个事件：市价单/可立即成交的限价单返回成交后状态，其余返回挂单状态
+                router.accept(o).get(2, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                // 超时不影响下单结果，前端轮询/推送获取后续状态
+            }
             return orders.selectById(o.id);
         } catch (DuplicateKeyException e) {
             return orders.findByClientKey(userId, clientKey);
@@ -106,6 +116,7 @@ public class OrderService {
         o.used = 0L;
         o.status = OrderStatus.NEW.code;
         o.tradingDay = rules.clock().tradingDay(now);
+        o.node = node;
         // 买单：限价按限价冻结；市价/止损按涨停价冻结（最坏情况），成交后多退
         o.frozen = side == Side.BUY
                 ? FillCalc.buyFreeze(type == OrderType.LIMIT ? req.price() : q.limitUp(), req.qty(), rules)

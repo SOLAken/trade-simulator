@@ -21,12 +21,13 @@ TABLES = {
   status        TINYINT     NOT NULL COMMENT '0新建 1部成 2全成 3已撤 4拒绝',
   reject_reason VARCHAR(64) NULL,
   trading_day   INT         NOT NULL,
+  node          INT         NOT NULL DEFAULT 0 COMMENT '撮合归属节点（重启恢复订单簿用）',
   created_at    DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   updated_at    DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
   PRIMARY KEY (id),
   UNIQUE KEY uk_user_client (user_id, client_key),
   KEY idx_user_contest_time (user_id, contest_id, created_at),
-  KEY idx_open (status, trading_day)
+  KEY idx_open (node, status)
 """,
 "t_trade": """
   id          BIGINT      NOT NULL,

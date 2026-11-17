@@ -25,6 +25,10 @@ public interface OrderMapper extends BaseMapper<OrderPO> {
     int close(@Param("id") long id, @Param("userId") long userId, @Param("expectFilled") long expectFilled,
               @Param("status") int status, @Param("reason") String reason);
 
+    /** 无分片键 → ShardingSphere 广播到全部 8 张分表（仅启动恢复时调用一次）。 */
+    @Select("SELECT * FROM t_order WHERE node = #{node} AND status IN (0, 1)")
+    List<OrderPO> listOpenByNode(@Param("node") int node);
+
     @Select("SELECT * FROM t_order WHERE user_id = #{userId} AND client_key = #{key}")
     OrderPO findByClientKey(@Param("userId") long userId, @Param("key") String key);
 
