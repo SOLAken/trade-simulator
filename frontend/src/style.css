@@ -1,0 +1,32 @@
+:root {
+  --bg: #0d1117;
+  --panel: #161b22;
+  --panel-2: #1c2230;
+  --border: #2a3140;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --up: #f6465d;      /* 涨：红 */
+  --down: #0ecb81;    /* 跌：绿 */
+  --accent: #f0b90b;
+  --radius: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", sans-serif;
+  font-variant-numeric: tabular-nums;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font-size: 14px; }
+button {
+  font: inherit; cursor: pointer; border: 1px solid var(--border); background: var(--panel-2);
+  color: var(--text); border-radius: 6px; padding: 6px 12px;
+}
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); color: #111; border-color: var(--accent); font-weight: 600; }
+input, select {
+  font: inherit; background: var(--bg); color: var(--text); border: 1px solid var(--border);
+  border-radius: 6px; padding: 8px 10px; width: 100%;
+}
+input:focus, select:focus { outline: none; border-color: var(--accent); }
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); }
+.up { color: var(--up); }
+.down { color: var(--down); }
+.muted { color: var(--muted); }

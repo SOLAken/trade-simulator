@@ -9,8 +9,6 @@ spring:
   cloud:
     nacos:
       server-addr: ${NACOS_ADDR:127.0.0.1:8848}
-      username: nacos
-      password: nacos
       discovery:
         namespace: ${NACOS_NS:}
       config:
@@ -19,6 +17,7 @@ spring:
   config:
     import:
       - optional:nacos:common.yaml
+      - optional:nacos:trade-rules.yaml?refreshEnabled=true
       - optional:nacos:${spring.application.name}.yaml?refreshEnabled=true
 management:
   endpoints:

@@ -9,8 +9,6 @@ spring:
   cloud:
     nacos:
       server-addr: ${NACOS_ADDR:127.0.0.1:8848}
-      username: nacos
-      password: nacos
       discovery:
         namespace: ${NACOS_NS:}
       config:
@@ -19,9 +17,37 @@ spring:
   config:
     import:
       - optional:nacos:common.yaml
+      - optional:nacos:trade-rules.yaml?refreshEnabled=true
       - optional:nacos:${spring.application.name}.yaml?refreshEnabled=true
 management:
   endpoints:
     web:
       exposure:
         include: health,info,prometheus,refresh
+---
+spring:
+  datasource:
+    url: jdbc:postgresql://${PG_HOST:127.0.0.1}:5432/market?reWriteBatchedInserts=true
+    username: postgres
+    password: postgres
+  kafka:
+    producer:
+      acks: 1
+      properties:
+        linger.ms: 5
+    consumer:
+      auto-offset-reset: latest
+market:
+  tick-millis: 500
+  # 年化波动率 sigma、年化漂移 mu；jump-prob 为每个 tick 发生新闻跳变的概率
+  symbols:
+    - { symbol: SIM001, name: 星辰科技, init-price: 25.80, sigma: 0.55, mu: 0.08 }
+    - { symbol: SIM002, name: 远航汽车, init-price: 142.30, sigma: 0.45, mu: 0.05 }
+    - { symbol: SIM003, name: 青禾农业, init-price: 8.62, sigma: 0.35, mu: 0.02 }
+    - { symbol: SIM004, name: 磐石银行, init-price: 5.41, sigma: 0.20, mu: 0.03 }
+    - { symbol: SIM005, name: 量子芯片, init-price: 88.00, sigma: 0.80, mu: 0.10 }
+    - { symbol: SIM006, name: 云栖医药, init-price: 36.75, sigma: 0.50, mu: 0.04 }
+    - { symbol: SIM007, name: 北辰能源, init-price: 12.18, sigma: 0.40, mu: 0.01 }
+    - { symbol: SIM008, name: 拾光传媒, init-price: 19.99, sigma: 0.65, mu: -0.02 }
+  jump-prob: 0.0004
+  jump-sigma: 0.04

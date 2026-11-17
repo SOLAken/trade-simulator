@@ -1,8 +1,11 @@
-# 交易规则（dataId: trade-rules.yaml）——热更新演示点：改了立即生效，不重启
+# 交易规则（dataId: trade-rules.yaml）——费率/涨跌停/滑点改了立即生效，不重启
 trade:
-  fee-rate: 0.0003        # 手续费率（万三）
-  min-fee: 5              # 最低手续费
-  stamp-tax-rate: 0.001   # 印花税（卖出单边）
-  limit-pct: 0.10         # 涨跌停幅度
-  slippage-bps: 5         # 市价单滑点（基点）
-  day-minutes: 30         # 一个交易日的真实分钟数
+  fee-rate: 0.0003          # 佣金费率（万三）
+  min-fee-cents: 500        # 最低佣金 5 元
+  stamp-tax-rate: 0.001     # 印花税（卖出单边）
+  limit-pct: 0.10           # 涨跌停幅度
+  slippage-bps: 5           # 市价单滑点（基点）
+  # 以下三项决定交易日序号，仅重启生效
+  day-minutes: 30           # 一个交易日的真实分钟数
+  break-seconds: 60         # 日间休市（撤单、T+1 解冻、日终结算）
+  anchor: 2026-11-01T00:00:00Z
